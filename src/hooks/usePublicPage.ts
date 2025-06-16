@@ -89,28 +89,37 @@ export function usePublicPage(username: string) {
         referer: document.referrer || null
       });
 
-      // Update click count on link - using direct SQL update instead of RPC
-      const { error: updateError } = await supabase
+      // Get current click count and increment it
+      const { data: linkData } = await supabase
         .from('links')
-        .update({ 
-          click_count: supabase.sql`click_count + 1` 
-        })
-        .eq('id', linkId);
+        .select('click_count')
+        .eq('id', linkId)
+        .single();
 
-      if (updateError) {
-        console.error('Error updating click count:', updateError);
-      }
-      
-      // Update local state
-      if (data) {
-        setData(prev => ({
-          ...prev!,
-          links: prev!.links.map(link => 
-            link.id === linkId 
-              ? { ...link, click_count: link.click_count + 1 }
-              : link
-          )
-        }));
+      if (linkData) {
+        const newClickCount = (linkData.click_count || 0) + 1;
+        
+        // Update click count
+        const { error: updateError } = await supabase
+          .from('links')
+          .update({ click_count: newClickCount })
+          .eq('id', linkId);
+
+        if (updateError) {
+          console.error('Error updating click count:', updateError);
+        } else {
+          // Update local state
+          if (data) {
+            setData(prev => ({
+              ...prev!,
+              links: prev!.links.map(link => 
+                link.id === linkId 
+                  ? { ...link, click_count: newClickCount }
+                  : link
+              )
+            }));
+          }
+        }
       }
     } catch (error) {
       console.error('Error tracking click:', error);
