@@ -6,7 +6,7 @@ export function AppDemo() {
   const [showDashboard, setShowDashboard] = useState(false);
 
   if (showDashboard) {
-    return <Dashboard onLogout={() => setShowDashboard(false)} />;
+    return <Dashboard />;
   }
 
   return null;
