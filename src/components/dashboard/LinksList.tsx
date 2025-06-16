@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { EditLinkModal } from "./EditLinkModal";
 
 interface Link {
   id: string;
@@ -61,6 +62,8 @@ const getIcon = (iconName: string) => {
 
 export function LinksList({ links, onUpdate, onDelete, onReorder }: LinksListProps) {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [editingLink, setEditingLink] = useState<Link | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const { toast } = useToast();
 
   const sortedLinks = [...links].sort((a, b) => a.position - b.position);
@@ -79,6 +82,11 @@ export function LinksList({ links, onUpdate, onDelete, onReorder }: LinksListPro
       title: "Link removido",
       description: `"${title}" foi removido permanentemente`
     });
+  };
+
+  const handleEdit = (link: Link) => {
+    setEditingLink(link);
+    setShowEditModal(true);
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -133,101 +141,110 @@ export function LinksList({ links, onUpdate, onDelete, onReorder }: LinksListPro
   };
 
   return (
-    <div className="space-y-3">
-      {sortedLinks.map((link) => (
-        <div
-          key={link.id}
-          draggable
-          onDragStart={(e) => handleDragStart(e, link.id)}
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, link.id)}
-          className={`
-            bg-white border rounded-lg p-4 transition-all duration-200 hover:shadow-md
-            ${draggedItem === link.id ? 'opacity-50 scale-95' : ''}
-            ${!link.is_active ? 'opacity-60' : ''}
-          `}
-        >
-          <div className="flex items-center space-x-4">
-            {/* Drag Handle */}
-            <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
-              <GripVertical className="w-4 h-4" />
-            </div>
+    <>
+      <div className="space-y-3">
+        {sortedLinks.map((link) => (
+          <div
+            key={link.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, link.id)}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, link.id)}
+            className={`
+              bg-white border rounded-lg p-4 transition-all duration-200 hover:shadow-md
+              ${draggedItem === link.id ? 'opacity-50 scale-95' : ''}
+              ${!link.is_active ? 'opacity-60' : ''}
+            `}
+          >
+            <div className="flex items-center space-x-4">
+              {/* Drag Handle */}
+              <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
+                <GripVertical className="w-4 h-4" />
+              </div>
 
-            {/* Icon */}
-            <div className="flex-shrink-0">
-              {getIcon(link.icon)}
-            </div>
+              {/* Icon */}
+              <div className="flex-shrink-0">
+                {getIcon(link.icon)}
+              </div>
 
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-gray-900 truncate">
-                    {link.title}
-                  </h3>
-                  <p className="text-sm text-gray-500 truncate">
-                    {formatUrl(link.url)}
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-3 ml-4">
-                  {/* Click Stats */}
-                  <div className="flex items-center space-x-1 text-sm text-gray-500">
-                    <BarChart3 className="w-4 h-4" />
-                    <span>{link.click_count}</span>
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-gray-900 truncate">
+                      {link.title}
+                    </h3>
+                    <p className="text-sm text-gray-500 truncate">
+                      {formatUrl(link.url)}
+                    </p>
                   </div>
 
-                  {/* Active Toggle */}
-                  <Switch
-                    checked={link.is_active}
-                    onCheckedChange={(checked) => handleToggleActive(link.id, checked)}
-                    className="data-[state=checked]:bg-green-500"
-                  />
+                  <div className="flex items-center space-x-3 ml-4">
+                    {/* Click Stats */}
+                    <div className="flex items-center space-x-1 text-sm text-gray-500">
+                      <BarChart3 className="w-4 h-4" />
+                      <span>{link.click_count}</span>
+                    </div>
 
-                  {/* Actions Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Abrir Link
-                        </a>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="text-red-600 focus:text-red-600"
-                        onClick={() => handleDelete(link.id, link.title)}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    {/* Active Toggle */}
+                    <Switch
+                      checked={link.is_active}
+                      onCheckedChange={(checked) => handleToggleActive(link.id, checked)}
+                      className="data-[state=checked]:bg-green-500"
+                    />
+
+                    {/* Actions Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <a href={link.url} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Abrir Link
+                          </a>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEdit(link)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-red-600 focus:text-red-600"
+                          onClick={() => handleDelete(link.id, link.title)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Status Badge */}
-          <div className="flex justify-between items-center mt-3 pt-3 border-t">
-            <Badge variant={link.is_active ? "default" : "secondary"} className="text-xs">
-              {link.is_active ? "Ativo" : "Inativo"}
-            </Badge>
-            
-            <span className="text-xs text-gray-400">
-              Criado em {new Date(link.created_at).toLocaleDateString('pt-BR')}
-            </span>
+            {/* Status Badge */}
+            <div className="flex justify-between items-center mt-3 pt-3 border-t">
+              <Badge variant={link.is_active ? "default" : "secondary"} className="text-xs">
+                {link.is_active ? "Ativo" : "Inativo"}
+              </Badge>
+              
+              <span className="text-xs text-gray-400">
+                Criado em {new Date(link.created_at).toLocaleDateString('pt-BR')}
+              </span>
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+
+      <EditLinkModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onUpdate={onUpdate}
+        link={editingLink}
+      />
+    </>
   );
 }
