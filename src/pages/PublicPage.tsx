@@ -1,6 +1,5 @@
 
 import { useParams } from "react-router-dom";
-import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,23 +16,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface User {
-  id: string;
-  name: string;
-  username: string;
-  avatar_url?: string;
-  bio?: string;
-}
-
-interface Link {
-  id: string;
-  title: string;
-  url: string;
-  icon: string;
-  position: number;
-  click_count: number;
-}
+import { usePublicPage } from "@/hooks/usePublicPage";
 
 const getIcon = (iconName: string) => {
   const iconMap = {
@@ -51,99 +34,14 @@ const getIcon = (iconName: string) => {
 
 const PublicPage = () => {
   const { username } = useParams<{ username: string }>();
-  const [user, setUser] = useState<User | null>(null);
-  const [links, setLinks] = useState<Link[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const { data, loading, error, trackClick } = usePublicPage(username || '');
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Simulate API call to fetch user data
-    const fetchUserData = async () => {
-      try {
-        setLoading(true);
-        
-        // Mock data for demonstration
-        if (username === "joaosilva" || username === "demo") {
-          const mockUser: User = {
-            id: "1",
-            name: "João Silva",
-            username: username,
-            avatar_url: undefined,
-            bio: "Desenvolvedor Frontend & Criador de Conteúdo\n✨ Compartilhando conhecimento sobre React e JavaScript"
-          };
-          
-          const mockLinks: Link[] = [
-            {
-              id: "1",
-              title: "Meu Instagram",
-              url: "https://instagram.com/joaosilva",
-              icon: "instagram",
-              position: 1,
-              click_count: 127
-            },
-            {
-              id: "2",
-              title: "Canal no YouTube",
-              url: "https://youtube.com/channel/joaosilva",
-              icon: "youtube",
-              position: 2,
-              click_count: 89
-            },
-            {
-              id: "3",
-              title: "Projetos no GitHub", 
-              url: "https://github.com/joaosilva",
-              icon: "github",
-              position: 3,
-              click_count: 45
-            },
-            {
-              id: "4",
-              title: "LinkedIn Profissional",
-              url: "https://linkedin.com/in/joaosilva",
-              icon: "linkedin",
-              position: 4,
-              click_count: 32
-            },
-            {
-              id: "5",
-              title: "Meu Site Pessoal",
-              url: "https://joaosilva.dev",
-              icon: "website",
-              position: 5,
-              click_count: 78
-            }
-          ];
-          
-          setTimeout(() => {
-            setUser(mockUser);
-            setLinks(mockLinks.sort((a, b) => a.position - b.position));
-            setLoading(false);
-          }, 800);
-        } else {
-          setTimeout(() => {
-            setNotFound(true);
-            setLoading(false);
-          }, 800);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setNotFound(true);
-        setLoading(false);
-      }
-    };
-
-    if (username) {
-      fetchUserData();
-    }
-  }, [username]);
-
-  const handleLinkClick = (link: Link) => {
+  const handleLinkClick = async (link: any) => {
     // Track click analytics
-    console.log(`Link clicked: ${link.title} -> ${link.url}`);
+    await trackClick(link.id);
     
-    // Show feedback
+    //Show feedback
     toast({
       title: "Redirecionando...",
       description: `Abrindo ${link.title}`,
@@ -164,7 +62,7 @@ const PublicPage = () => {
     );
   }
 
-  if (notFound || !user) {
+  if (error || !data) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center">
         <div className="text-center space-y-6 p-8">
@@ -196,30 +94,32 @@ const PublicPage = () => {
     );
   }
 
+  const { profile, links } = data;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
       <div className="container mx-auto px-4 py-8 max-w-md">
         {/* Profile Header */}
         <div className="text-center mb-8">
           <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-white shadow-lg">
-            <AvatarImage src={user.avatar_url} />
+            <AvatarImage src={profile.avatar_url} />
             <AvatarFallback className="bg-purple-100 text-purple-600 text-2xl font-bold">
-              {user.name.charAt(0).toUpperCase()}
+              {profile.name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            {user.name}
+            {profile.name}
           </h1>
           
-          {user.bio && (
+          {profile.bio && (
             <div className="text-gray-600 mb-3 whitespace-pre-line text-sm leading-relaxed">
-              {user.bio}
+              {profile.bio}
             </div>
           )}
           
           <Badge variant="secondary" className="text-sm">
-            @{user.username}
+            @{profile.username}
           </Badge>
         </div>
 

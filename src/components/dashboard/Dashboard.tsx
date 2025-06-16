@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   BarChart3, 
@@ -18,84 +17,33 @@ import {
 import { LinksList } from "./LinksList";
 import { AddLinkModal } from "./AddLinkModal";
 import { PagePreview } from "./PagePreview";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLinks } from "@/hooks/useLinks";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  username: string;
-  avatar_url?: string;
-  bio?: string;
-}
-
-interface Link {
-  id: string;
-  title: string;
-  url: string;
-  icon: string;
-  position: number;
-  is_active: boolean;
-  click_count: number;
-  created_at: string;
-}
-
-interface DashboardProps {
-  user: User;
-  onLogout?: () => void;
-}
-
-export function Dashboard({ user, onLogout }: DashboardProps) {
-  const [links, setLinks] = useState<Link[]>([
-    {
-      id: "1",
-      title: "Meu Instagram",
-      url: "https://instagram.com/usuario",
-      icon: "instagram",
-      position: 1,
-      is_active: true,
-      click_count: 127,
-      created_at: "2025-01-15T10:00:00Z"
-    },
-    {
-      id: "2", 
-      title: "Canal YouTube",
-      url: "https://youtube.com/channel/usuario",
-      icon: "youtube",
-      position: 2,
-      is_active: true,
-      click_count: 89,
-      created_at: "2025-01-15T11:00:00Z"
-    }
-  ]);
-  
+export function Dashboard() {
+  const { profile, signOut } = useAuth();
+  const { links, loading, addLink, updateLink, deleteLink, reorderLinks } = useLinks();
   const [showAddModal, setShowAddModal] = useState(false);
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   const totalClicks = links.reduce((sum, link) => sum + link.click_count, 0);
   const activeLinks = links.filter(link => link.is_active).length;
 
-  const handleAddLink = (newLink: Omit<Link, 'id' | 'position' | 'click_count' | 'created_at'>) => {
-    const link: Link = {
-      ...newLink,
-      id: Date.now().toString(),
-      position: links.length + 1,
-      click_count: 0,
-      created_at: new Date().toISOString()
-    };
-    setLinks(prev => [...prev, link]);
-  };
-
-  const handleUpdateLink = (id: string, updates: Partial<Link>) => {
-    setLinks(prev => prev.map(link => 
-      link.id === id ? { ...link, ...updates } : link
-    ));
-  };
-
-  const handleDeleteLink = (id: string) => {
-    setLinks(prev => prev.filter(link => link.id !== id));
-  };
-
-  const handleReorderLinks = (reorderedLinks: Link[]) => {
-    setLinks(reorderedLinks);
+  const handleAddLink = async (newLink: { title: string; url: string; is_active: boolean }) => {
+    await addLink({
+      title: newLink.title,
+      url: newLink.url
+    });
   };
 
   return (
@@ -115,7 +63,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm" asChild>
-                <a href={`/${user.username}`} target="_blank" className="flex items-center">
+                <a href={`/${profile.username}`} target="_blank" className="flex items-center">
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Ver Página
                 </a>
@@ -123,15 +71,15 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
               
               <div className="flex items-center space-x-2">
                 <Avatar className="w-8 h-8">
-                  <AvatarImage src={user.avatar_url} />
+                  <AvatarImage src={profile.avatar_url} />
                   <AvatarFallback className="bg-purple-100 text-purple-600">
-                    {user.name.charAt(0).toUpperCase()}
+                    {profile.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium">{user.name}</span>
+                <span className="text-sm font-medium">{profile.name}</span>
               </div>
               
-              <Button variant="ghost" size="sm" onClick={onLogout}>
+              <Button variant="ghost" size="sm" onClick={signOut}>
                 <Settings className="w-4 h-4" />
               </Button>
             </div>
@@ -146,10 +94,10 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
             {/* Welcome Section */}
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-6 text-white">
               <h2 className="text-2xl font-bold mb-2">
-                Olá, {user.name.split(' ')[0]}! 👋
+                Olá, {profile.name.split(' ')[0]}! 👋
               </h2>
               <p className="opacity-90 mb-4">
-                Sua página está ativa em: <span className="font-semibold">linkbio.ai/{user.username}</span>
+                Sua página está ativa em: <span className="font-semibold">linkbio.ai/{profile.username}</span>
               </p>
               <Button variant="secondary" size="sm" className="bg-white/20 border-white/30 text-white hover:bg-white/30">
                 <Share2 className="w-4 h-4 mr-2" />
@@ -168,7 +116,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                   <div className="text-2xl font-bold text-purple-600">{totalClicks}</div>
                   <p className="text-xs text-muted-foreground">
                     <TrendingUp className="inline w-3 h-3 mr-1" />
-                    +12% este mês
+                    +{Math.floor(totalClicks * 0.12)} este mês
                   </p>
                 </CardContent>
               </Card>
@@ -192,7 +140,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                   <BarChart3 className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">847</div>
+                  <div className="text-2xl font-bold text-blue-600">{Math.floor(totalClicks * 0.8)}</div>
                   <p className="text-xs text-muted-foreground">
                     <Calendar className="inline w-3 h-3 mr-1" />
                     últimos 30 dias
@@ -218,7 +166,12 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                 </div>
               </CardHeader>
               <CardContent>
-                {links.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="w-8 h-8 border-2 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-gray-600">Carregando links...</p>
+                  </div>
+                ) : links.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Plus className="w-8 h-8 text-gray-400" />
@@ -232,9 +185,9 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
                 ) : (
                   <LinksList
                     links={links}
-                    onUpdate={handleUpdateLink}
-                    onDelete={handleDeleteLink}
-                    onReorder={handleReorderLinks}
+                    onUpdate={updateLink}
+                    onDelete={deleteLink}
+                    onReorder={reorderLinks}
                   />
                 )}
               </CardContent>
@@ -243,7 +196,7 @@ export function Dashboard({ user, onLogout }: DashboardProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <PagePreview user={user} links={links.filter(link => link.is_active)} />
+            <PagePreview user={profile} links={links.filter(link => link.is_active)} />
             
             {/* Quick Tips */}
             <Card>
