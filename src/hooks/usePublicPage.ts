@@ -89,8 +89,17 @@ export function usePublicPage(username: string) {
         referer: document.referrer || null
       });
 
-      // Update click count on link
-      await supabase.rpc('increment_click_count', { link_id: linkId });
+      // Update click count on link - using direct SQL update instead of RPC
+      const { error: updateError } = await supabase
+        .from('links')
+        .update({ 
+          click_count: supabase.sql`click_count + 1` 
+        })
+        .eq('id', linkId);
+
+      if (updateError) {
+        console.error('Error updating click count:', updateError);
+      }
       
       // Update local state
       if (data) {

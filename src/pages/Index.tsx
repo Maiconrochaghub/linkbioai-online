@@ -1,16 +1,20 @@
+
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import LoginModal from "@/components/auth/LoginModal";
-import SignupModal from "@/components/auth/SignupModal";
+import { LoginModal } from "@/components/auth/LoginModal";
+import { SignupModal } from "@/components/auth/SignupModal";
 import { AppDemo } from "@/components/AppDemo";
 import { Dashboard } from "@/components/dashboard/Dashboard";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
 
 const Index = () => {
   const { user, profile, loading } = useAuth();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [signupModalOpen, setSignupModalOpen] = useState(false);
 
   // Show loading state while checking authentication
   if (loading) {
@@ -32,7 +36,6 @@ const Index = () => {
   // Show landing page for non-authenticated users
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
-      {/* ... keep existing code (hero section) the same ... */}
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto">
           {/* Hero Section */}
@@ -56,17 +59,22 @@ const Index = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <SignupModal>
-                <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-                  Criar Conta Grátis
-                </Button>
-              </SignupModal>
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                onClick={() => setSignupModalOpen(true)}
+              >
+                Criar Conta Grátis
+              </Button>
               
-              <LoginModal>
-                <Button size="lg" variant="outline" className="px-8 py-4 text-lg font-semibold rounded-xl border-2 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200">
-                  Já tenho conta
-                </Button>
-              </LoginModal>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="px-8 py-4 text-lg font-semibold rounded-xl border-2 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200"
+                onClick={() => setLoginModalOpen(true)}
+              >
+                Já tenho conta
+              </Button>
             </div>
             
             <p className="text-sm text-gray-500">
@@ -154,14 +162,27 @@ const Index = () => {
               Junte-se a milhares de criadores que já usam LinkBio.AI
             </p>
             
-            <SignupModal>
-              <Button size="lg" className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-                Começar Agora - É Grátis!
-              </Button>
-            </SignupModal>
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-4 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+              onClick={() => setSignupModalOpen(true)}
+            >
+              Começar Agora - É Grátis!
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <LoginModal 
+        open={loginModalOpen} 
+        onOpenChange={setLoginModalOpen} 
+      />
+      
+      <SignupModal 
+        open={signupModalOpen} 
+        onOpenChange={setSignupModalOpen} 
+      />
     </div>
   );
 };
