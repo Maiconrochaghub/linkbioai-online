@@ -10,62 +10,78 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 export default function VerificationPage() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleVerification = async () => {
+      // Wait for auth context to load
+      if (loading) return;
+
       // If user is already authenticated, redirect to dashboard
       if (user) {
-        navigate("/dashboard");
+        console.log('User already authenticated, redirecting to dashboard');
+        setStatus('success');
+        toast({
+          title: "Acesso autorizado! 🎉",
+          description: "Redirecionando para seu painel...",
+        });
+        
+        setTimeout(() => {
+          navigate("/dashboard", { replace: true });
+        }, 1500);
         return;
       }
 
-      // Get token from URL parameters
-      const token = searchParams.get('token');
+      // Check for authentication tokens in URL
       const access_token = searchParams.get('access_token');
       const refresh_token = searchParams.get('refresh_token');
+      const token_type = searchParams.get('token_type');
+      const type = searchParams.get('type');
 
-      // Check if we have the necessary tokens
-      if (!token && !access_token) {
+      console.log('URL params:', { access_token: !!access_token, refresh_token: !!refresh_token, token_type, type });
+
+      if (access_token && refresh_token) {
+        try {
+          // Supabase should automatically handle the session when tokens are in URL
+          console.log('Tokens found in URL, waiting for auth state change...');
+          
+          // Give some time for the auth state to update
+          setTimeout(() => {
+            if (!user) {
+              console.log('No user found after waiting, showing error');
+              setStatus('error');
+              toast({
+                title: "Erro na verificação",
+                description: "Não foi possível autenticar. Tente fazer login novamente.",
+                variant: "destructive"
+              });
+            }
+          }, 3000);
+          
+        } catch (error) {
+          console.error('Verification error:', error);
+          setStatus('error');
+          toast({
+            title: "Erro na verificação",
+            description: "Ocorreu um erro ao verificar seu acesso. Tente novamente.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        console.log('No tokens found in URL');
         setStatus('error');
         toast({
           title: "Link inválido",
           description: "O link de verificação é inválido ou expirou.",
           variant: "destructive"
         });
-        return;
-      }
-
-      try {
-        // Supabase automatically handles the authentication when the user clicks the magic link
-        // The tokens are passed in the URL and should be processed by Supabase client
-        setStatus('success');
-        
-        toast({
-          title: "Login realizado com sucesso! 🎉",
-          description: "Bem-vindo ao LinkBio.AI!",
-        });
-
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 2000);
-
-      } catch (error) {
-        console.error('Verification error:', error);
-        setStatus('error');
-        toast({
-          title: "Erro na verificação",
-          description: "Ocorreu um erro ao verificar seu login. Tente novamente.",
-          variant: "destructive"
-        });
       }
     };
 
     handleVerification();
-  }, [searchParams, user, navigate, toast]);
+  }, [searchParams, user, loading, navigate, toast]);
 
   const handleRetry = () => {
     navigate('/login');
@@ -89,13 +105,13 @@ export default function VerificationPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
-              {status === 'loading' && "Verificando..."}
-              {status === 'success' && "Login realizado!"}
+              {status === 'loading' && "Verificando acesso..."}
+              {status === 'success' && "Acesso autorizado!"}
               {status === 'error' && "Erro na verificação"}
             </CardTitle>
             <CardDescription className="text-center">
-              {status === 'loading' && "Aguarde enquanto verificamos seu login"}
-              {status === 'success' && "Redirecionando para seu dashboard"}
+              {status === 'loading' && "Aguarde enquanto verificamos seu acesso"}
+              {status === 'success' && "Redirecionando para seu painel"}
               {status === 'error' && "Ocorreu um problema com o link de verificação"}
             </CardDescription>
           </CardHeader>

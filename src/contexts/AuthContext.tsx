@@ -12,6 +12,7 @@ interface Profile {
   bio?: string;
   theme: string;
   is_verified: boolean;
+  role: string;
   created_at: string;
   updated_at: string;
 }
@@ -21,10 +22,10 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, name: string) => Promise<{ error?: string }>;
-  signIn: (email: string) => Promise<{ error?: string }>;
+  signUpOrSignIn: (email: string, name?: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error?: string }>;
+  isMasterAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile
+          // Defer profile fetch to avoid deadlock
           setTimeout(async () => {
             await fetchProfile(session.user.id);
           }, 0);
@@ -91,59 +92,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, name: string) => {
+  const signUpOrSignIn = async (email: string, name?: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/verify`;
       
-      const { error } = await supabase.auth.signUp({
-        email,
-        password: Math.random().toString(36), // Random password, we'll use magic links
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: { name }
-        }
-      });
-
-      if (error) {
-        return { error: error.message };
-      }
-
-      // Send magic link after signup
-      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+      // First try to sign in (for existing users)
+      const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: redirectUrl
         }
       });
 
-      if (magicLinkError) {
-        return { error: magicLinkError.message };
-      }
+      // If sign in fails, try to sign up (for new users)
+      if (signInError) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password: Math.random().toString(36), // Random password, we use magic links
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: { name: name || email.split('@')[0] }
+          }
+        });
 
-      return {};
-    } catch (error) {
-      return { error: 'Erro inesperado ao criar conta' };
-    }
-  };
-
-  const signIn = async (email: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: redirectUrl
+        if (signUpError) {
+          return { error: signUpError.message };
         }
-      });
 
-      if (error) {
-        return { error: error.message };
+        // Send magic link after signup
+        const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: redirectUrl
+          }
+        });
+
+        if (magicLinkError) {
+          return { error: magicLinkError.message };
+        }
       }
 
       return {};
     } catch (error) {
-      return { error: 'Erro inesperado ao fazer login' };
+      return { error: 'Erro inesperado ao processar login/cadastro' };
     }
   };
 
@@ -180,15 +171,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const isMasterAdmin = () => {
+    return profile?.role === 'master_admin';
+  };
+
   const value = {
     user,
     profile,
     session,
     loading,
-    signUp,
-    signIn,
+    signUpOrSignIn,
     signOut,
-    updateProfile
+    updateProfile,
+    isMasterAdmin
   };
 
   return (

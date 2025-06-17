@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-interface Link {
+export interface Link {
   id: string;
   user_id: string;
   title: string;
@@ -17,16 +17,10 @@ interface Link {
   updated_at: string;
 }
 
-interface CreateLinkData {
-  title: string;
-  url: string;
-  icon?: string;
-}
-
 export function useLinks() {
   const [links, setLinks] = useState<Link[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const { user, isMasterAdmin } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,13 +32,21 @@ export function useLinks() {
   const fetchLinks = async () => {
     if (!user) return;
 
-    setLoading(true);
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      
+      // Master admin can see all links, regular users only their own
+      let query = supabase
         .from('links')
         .select('*')
-        .eq('user_id', user.id)
         .order('position', { ascending: true });
+
+      // If not master admin, filter by user_id
+      if (!isMasterAdmin()) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching links:', error);
@@ -57,37 +59,37 @@ export function useLinks() {
       }
 
       setLinks(data || []);
+    } catch (error) {
+      console.error('Error fetching links:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const addLink = async (linkData: CreateLinkData) => {
+  const addLink = async (linkData: { title: string; url: string }) => {
     if (!user) return;
 
-    // Detect icon from URL
-    const icon = detectIcon(linkData.url);
-    const position = links.length;
-
     try {
+      // Get the highest position
+      const maxPosition = links.length > 0 ? Math.max(...links.map(l => l.position)) : -1;
+      
       const { data, error } = await supabase
         .from('links')
-        .insert({
+        .insert([{
           user_id: user.id,
           title: linkData.title,
           url: linkData.url,
-          icon: linkData.icon || icon,
-          position,
-          is_active: true
-        })
+          position: maxPosition + 1,
+          is_active: true,
+          icon: 'website'
+        }])
         .select()
         .single();
 
       if (error) {
-        console.error('Error creating link:', error);
         toast({
           title: "Erro",
-          description: "Erro ao criar link",
+          description: "Erro ao adicionar link",
           variant: "destructive"
         });
         return;
@@ -96,30 +98,21 @@ export function useLinks() {
       setLinks(prev => [...prev, data]);
       toast({
         title: "Sucesso",
-        description: "Link adicionado com sucesso!"
+        description: "Link adicionado com sucesso!",
       });
     } catch (error) {
-      console.error('Error creating link:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao criar link",
-        variant: "destructive"
-      });
+      console.error('Error adding link:', error);
     }
   };
 
   const updateLink = async (id: string, updates: Partial<Link>) => {
-    if (!user) return;
-
     try {
       const { error } = await supabase
         .from('links')
         .update(updates)
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
       if (error) {
-        console.error('Error updating link:', error);
         toast({
           title: "Erro",
           description: "Erro ao atualizar link",
@@ -129,38 +122,29 @@ export function useLinks() {
       }
 
       setLinks(prev => prev.map(link => 
-        link.id === id ? { ...link, ...updates, updated_at: new Date().toISOString() } : link
+        link.id === id ? { ...link, ...updates } : link
       ));
 
       toast({
         title: "Sucesso",
-        description: "Link atualizado com sucesso!"
+        description: "Link atualizado com sucesso!",
       });
     } catch (error) {
       console.error('Error updating link:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao atualizar link",
-        variant: "destructive"
-      });
     }
   };
 
   const deleteLink = async (id: string) => {
-    if (!user) return;
-
     try {
       const { error } = await supabase
         .from('links')
         .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('id', id);
 
       if (error) {
-        console.error('Error deleting link:', error);
         toast({
           title: "Erro",
-          description: "Erro ao excluir link",
+          description: "Erro ao deletar link",
           variant: "destructive"
         });
         return;
@@ -169,21 +153,14 @@ export function useLinks() {
       setLinks(prev => prev.filter(link => link.id !== id));
       toast({
         title: "Sucesso",
-        description: "Link excluído com sucesso!"
+        description: "Link removido com sucesso!",
       });
     } catch (error) {
       console.error('Error deleting link:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao excluir link",
-        variant: "destructive"
-      });
     }
   };
 
   const reorderLinks = async (reorderedLinks: Link[]) => {
-    if (!user) return;
-
     try {
       // Update positions in database
       const updates = reorderedLinks.map((link, index) => ({
@@ -195,29 +172,21 @@ export function useLinks() {
         const { error } = await supabase
           .from('links')
           .update({ position: update.position })
-          .eq('id', update.id)
-          .eq('user_id', user.id);
+          .eq('id', update.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating link position:', error);
+          return;
+        }
       }
 
-      // Update local state
-      setLinks(reorderedLinks.map((link, index) => ({
-        ...link,
-        position: index
-      })));
-
+      setLinks(reorderedLinks);
       toast({
         title: "Sucesso",
-        description: "Ordem dos links atualizada!"
+        description: "Ordem dos links atualizada!",
       });
     } catch (error) {
       console.error('Error reordering links:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao reordenar links",
-        variant: "destructive"
-      });
     }
   };
 
@@ -228,38 +197,6 @@ export function useLinks() {
     updateLink,
     deleteLink,
     reorderLinks,
-    refetch: fetchLinks
+    fetchLinks
   };
-}
-
-// Icon detection utility
-function detectIcon(url: string): string {
-  if (!url) return 'website';
-  
-  try {
-    const domain = new URL(url).hostname.toLowerCase();
-    
-    const iconMap: Record<string, string> = {
-      'instagram.com': 'instagram',
-      'www.instagram.com': 'instagram',
-      'youtube.com': 'youtube',
-      'www.youtube.com': 'youtube',
-      'youtu.be': 'youtube',
-      'tiktok.com': 'tiktok',
-      'www.tiktok.com': 'tiktok',
-      'twitter.com': 'twitter',
-      'www.twitter.com': 'twitter',
-      'x.com': 'twitter',
-      'linkedin.com': 'linkedin',
-      'www.linkedin.com': 'linkedin',
-      'github.com': 'github',
-      'www.github.com': 'github',
-      'wa.me': 'whatsapp',
-      'api.whatsapp.com': 'whatsapp'
-    };
-    
-    return iconMap[domain] || 'website';
-  } catch {
-    return 'website';
-  }
 }

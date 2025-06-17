@@ -99,6 +99,7 @@ export type Database = {
           id: string
           is_verified: boolean | null
           name: string
+          role: string | null
           theme: string | null
           updated_at: string | null
           username: string
@@ -110,6 +111,7 @@ export type Database = {
           id: string
           is_verified?: boolean | null
           name: string
+          role?: string | null
           theme?: string | null
           updated_at?: string | null
           username: string
@@ -121,6 +123,7 @@ export type Database = {
           id?: string
           is_verified?: boolean | null
           name?: string
+          role?: string | null
           theme?: string | null
           updated_at?: string | null
           username?: string
@@ -132,7 +135,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_master_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

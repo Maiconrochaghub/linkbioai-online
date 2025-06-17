@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +13,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const { signIn } = useAuth();
+  const { signUpOrSignIn } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +40,7 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      const { error } = await signIn(email);
+      const { error } = await signUpOrSignIn(email);
       
       if (error) {
         toast({
@@ -53,7 +52,7 @@ export default function LoginPage() {
         setEmailSent(true);
         toast({
           title: "Link de acesso enviado! 📧",
-          description: "Verifique seu email e clique no link para entrar.",
+          description: "Verifique seu email e clique no link para acessar seu painel.",
         });
       }
     } catch (error) {
@@ -95,12 +94,12 @@ export default function LoginPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
-              {emailSent ? "Link Enviado!" : "Fazer Login"}
+              {emailSent ? "Link Enviado!" : "Acessar Painel"}
             </CardTitle>
             <CardDescription className="text-center">
               {emailSent 
-                ? "Verifique seu email e clique no link para entrar"
-                : "Enviaremos um link mágico para seu email"
+                ? "Verifique seu email e clique no link para acessar"
+                : "Digite seu email para receber o link de acesso"
               }
             </CardDescription>
           </CardHeader>
@@ -133,11 +132,11 @@ export default function LoginPage() {
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Enviando link...
+                      Enviando...
                     </>
                   ) : (
                     <>
-                      Enviar Link Mágico
+                      Acessar Painel
                       <Send className="w-4 h-4 ml-2" />
                     </>
                   )}
@@ -151,9 +150,12 @@ export default function LoginPage() {
                 
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600">
-                    Enviamos um link de acesso para:
+                    Link de acesso enviado para:
                   </p>
                   <p className="font-medium text-gray-900">{email}</p>
+                  <p className="text-xs text-gray-500">
+                    Se já possui conta, será feito o login. Se não, sua conta será criada automaticamente.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -165,15 +167,6 @@ export default function LoginPage() {
                     Usar outro email
                   </Button>
                 </div>
-              </div>
-            )}
-
-            {!emailSent && (
-              <div className="text-center text-sm text-gray-600 mt-4">
-                Não tem conta?{" "}
-                <Link to="/" className="text-purple-600 hover:text-purple-700 font-medium">
-                  Criar conta grátis
-                </Link>
               </div>
             )}
           </CardContent>
