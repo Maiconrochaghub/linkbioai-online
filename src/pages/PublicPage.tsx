@@ -146,6 +146,25 @@ const PublicPage = () => {
 
   return (
     <div className={theme.background}>
+      <style>
+        {`
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          .fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+          }
+        `}
+      </style>
+      
       <div className="container mx-auto px-4 py-8 max-w-md">
         {/* Profile Header */}
         <div className={`text-center mb-8 ${theme.container} rounded-2xl p-6 border transition-all duration-300`}>
@@ -177,10 +196,9 @@ const PublicPage = () => {
             <button
               key={link.id}
               onClick={() => handleLinkClick(link)}
-              className={`w-full rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border group transform hover:scale-105 ${theme.button}`}
+              className={`w-full rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border group transform hover:scale-105 fade-in-up ${theme.button}`}
               style={{ 
-                animationDelay: `${index * 100}ms`,
-                animation: 'fadeInUp 0.6s ease-out forwards'
+                animationDelay: `${index * 100}ms`
               }}
             >
               <div className="flex items-center space-x-4">
@@ -226,19 +244,6 @@ const PublicPage = () => {
           </Button>
         </div>
       </div>
-      
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
