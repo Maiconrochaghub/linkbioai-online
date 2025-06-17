@@ -15,7 +15,7 @@ export default function SignupPage() {
     email: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const { signUpOrSignIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -43,7 +43,7 @@ export default function SignupPage() {
     setIsLoading(true);
     
     try {
-      const { error } = await signUp(formData.email, formData.name);
+      const { error } = await signUpOrSignIn(formData.email, formData.name);
       
       if (error) {
         toast({
@@ -53,8 +53,8 @@ export default function SignupPage() {
         });
       } else {
         toast({
-          title: "Conta criada com sucesso! 🎉",
-          description: "Verifique seu email para confirmar sua conta.",
+          title: "Verifique seu email! 📧",
+          description: "Enviamos um link mágico para acessar sua conta.",
         });
         
         // Redirect to login after successful signup
