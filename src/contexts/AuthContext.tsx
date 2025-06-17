@@ -33,9 +33,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Bypass para desenvolvimento - Maicon Rocha
-const MAICON_ID = '14e72f7f-759d-426a-9573-5ef6f5afaf35';
-const MAICON_EMAIL = 'maicons.rocha@hotmail.com';
+// IDs dos administradores master - Maicon Rocha
+const MAICON_IDS = [
+  '14e72f7f-759d-426a-9573-5ef6f5afaf35', // ID antigo
+  'bb2d39b1-7a98-4ea3-aff2-ee2523cb485b'  // ID novo
+];
+
+const MAICON_EMAILS = [
+  'maicons.rocha@hotmail.com',
+  'maiconrochadsb@gmail.com'
+];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -57,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Defer profile fetch to avoid deadlock
           setTimeout(async () => {
             await fetchProfile(session.user.id);
           }, 0);
@@ -94,7 +100,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('👤 Buscando perfil para:', userId);
       
-      // Timeout para evitar loading infinito
       const timeoutId = setTimeout(() => {
         console.warn('⚠️ Timeout ao buscar perfil, continuando sem perfil');
         setProfile(null);
@@ -112,14 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('❌ Erro ao buscar perfil:', error);
         
-        // Se é Maicon, criar perfil de emergência
-        if (userId === MAICON_ID) {
+        // Se é um dos Maicons, criar perfil de emergência
+        if (MAICON_IDS.includes(userId)) {
           console.log('🛡️ Criando perfil de emergência para Maicon');
           const emergencyProfile: Profile = {
-            id: MAICON_ID,
+            id: userId,
             name: 'Maicon Rocha',
             username: 'maicon',
-            theme: 'instagram',
+            theme: 'default',
             is_verified: true,
             role: 'master_admin',
             created_at: new Date().toISOString(),
@@ -175,7 +180,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          data: { name }
+          data: { name },
+          emailRedirectTo: `${window.location.origin}/dashboard`
         }
       });
 
@@ -211,20 +217,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) return { error: 'Usuário não autenticado' };
 
     try {
+      console.log('✏️ Atualizando perfil:', updates);
+      
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', user.id);
 
       if (error) {
+        console.error('❌ Erro ao atualizar perfil:', error);
         return { error: error.message };
       }
 
       // Update local state
       setProfile(prev => prev ? { ...prev, ...updates, updated_at: new Date().toISOString() } : null);
       
+      console.log('✅ Perfil atualizado com sucesso');
+      toast({
+        title: "Sucesso",
+        description: "Perfil atualizado com sucesso!",
+      });
+      
       return {};
     } catch (error) {
+      console.error('❌ Erro inesperado ao atualizar perfil:', error);
       return { error: 'Erro inesperado ao atualizar perfil' };
     }
   };
@@ -234,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isMaiconRocha = () => {
-    return user?.id === MAICON_ID || user?.email === MAICON_EMAIL;
+    return MAICON_IDS.includes(user?.id || '') || MAICON_EMAILS.includes(user?.email || '');
   };
 
   const value = {

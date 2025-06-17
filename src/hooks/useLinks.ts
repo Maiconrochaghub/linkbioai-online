@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,9 +22,14 @@ export function useLinks() {
   const { user, isMasterAdmin, isMaiconRocha } = useAuth();
   const { toast } = useToast();
 
-  // Bypass para Maicon em desenvolvimento
+  // Bypass para Maicon em desenvolvimento ou IDs de administradores master
   const isMaiconBypass = isMaiconRocha() && process.env.NODE_ENV === 'development';
-  const effectiveUserId = user?.id || (isMaiconBypass ? '14e72f7f-759d-426a-9573-5ef6f5afaf35' : null);
+  const MAICON_IDS = [
+    '14e72f7f-759d-426a-9573-5ef6f5afaf35', // ID antigo
+    'bb2d39b1-7a98-4ea3-aff2-ee2523cb485b'  // ID novo
+  ];
+  
+  const effectiveUserId = user?.id || (isMaiconBypass ? MAICON_IDS[0] : null);
 
   useEffect(() => {
     if (effectiveUserId || isMaiconBypass) {
@@ -93,7 +97,7 @@ export function useLinks() {
       const { data, error } = await supabase
         .from('links')
         .insert([{
-          user_id: effectiveUserId || '14e72f7f-759d-426a-9573-5ef6f5afaf35',
+          user_id: effectiveUserId || MAICON_IDS[0],
           title: linkData.title,
           url: linkData.url,
           position: maxPosition + 1,

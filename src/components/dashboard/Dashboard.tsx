@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   BarChart3, 
   Eye, 
@@ -15,11 +16,13 @@ import {
   Shield,
   Users,
   AlertCircle,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react";
 import { LinksList } from "./LinksList";
 import { AddLinkModal } from "./AddLinkModal";
 import { PagePreview } from "./PagePreview";
+import { ProfileEditor } from "./ProfileEditor";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLinks } from "@/hooks/useLinks";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +32,7 @@ export function Dashboard() {
   const { links, loading: linksLoading, addLink, updateLink, deleteLink, reorderLinks } = useLinks();
   const [showAddModal, setShowAddModal] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('links');
   const navigate = useNavigate();
 
   // Bypass para Maicon durante desenvolvimento
@@ -89,7 +93,7 @@ export function Dashboard() {
     id: '14e72f7f-759d-426a-9573-5ef6f5afaf35',
     name: 'Maicon Rocha',
     username: 'maicon',
-    theme: 'instagram',
+    theme: 'default',
     is_verified: true,
     role: 'master_admin',
     created_at: new Date().toISOString(),
@@ -255,47 +259,72 @@ export function Dashboard() {
               </Card>
             </div>
 
-            {/* Links Management */}
+            {/* Tabs para Links e Perfil */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Seus Links</CardTitle>
-                    <CardDescription>
-                      Gerencie e organize seus links
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => setShowAddModal(true)} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar Link
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {linksLoading ? (
-                  <div className="text-center py-8">
-                    <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-2" />
-                    <p className="text-gray-600">Carregando links...</p>
-                  </div>
-                ) : links.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Plus className="w-8 h-8 text-gray-400" />
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="links">Meus Links</TabsTrigger>
+                    <TabsTrigger value="profile">Editar Perfil</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="links" className="mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <CardTitle>Seus Links</CardTitle>
+                        <CardDescription>
+                          Gerencie e organize seus links
+                        </CardDescription>
+                      </div>
+                      <Button onClick={() => setShowAddModal(true)} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Link
+                      </Button>
                     </div>
-                    <h3 className="text-lg font-medium mb-2">Nenhum link ainda</h3>
-                    <p className="text-gray-600 mb-4">Comece adicionando seu primeiro link</p>
-                    <Button onClick={() => setShowAddModal(true)} variant="outline">
-                      Adicionar Primeiro Link
-                    </Button>
-                  </div>
-                ) : (
-                  <LinksList
-                    links={links}
-                    onUpdate={updateLink}
-                    onDelete={deleteLink}
-                    onReorder={reorderLinks}
-                  />
-                )}
+                  </TabsContent>
+                  
+                  <TabsContent value="profile" className="mt-6">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <User className="w-5 h-5 text-purple-600" />
+                      <CardTitle>Editar Perfil</CardTitle>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardHeader>
+              
+              <CardContent>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsContent value="links">
+                    {linksLoading ? (
+                      <div className="text-center py-8">
+                        <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-2" />
+                        <p className="text-gray-600">Carregando links...</p>
+                      </div>
+                    ) : links.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Plus className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium mb-2">Nenhum link ainda</h3>
+                        <p className="text-gray-600 mb-4">Comece adicionando seu primeiro link</p>
+                        <Button onClick={() => setShowAddModal(true)} variant="outline">
+                          Adicionar Primeiro Link
+                        </Button>
+                      </div>
+                    ) : (
+                      <LinksList
+                        links={links}
+                        onUpdate={updateLink}
+                        onDelete={deleteLink}
+                        onReorder={reorderLinks}
+                      />
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="profile">
+                    <ProfileEditor />
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>
