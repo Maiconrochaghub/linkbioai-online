@@ -26,11 +26,13 @@ import { ProfileEditor } from "./ProfileEditor";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLinks } from "@/hooks/useLinks";
 import { useNavigate } from "react-router-dom";
+import { ShareModal } from "./ShareModal";
 
 export function Dashboard() {
   const { user, profile, loading, error, signOut, isMasterAdmin, isMaiconRocha } = useAuth();
   const { links, loading: linksLoading, addLink, updateLink, deleteLink, reorderLinks } = useLinks();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('links');
   const navigate = useNavigate();
@@ -149,6 +151,16 @@ export function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowShareModal(true)}
+                className="flex items-center"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Compartilhar
+              </Button>
+              
               <Button variant="outline" size="sm" asChild>
                 <a href={`/${currentProfile.username}`} target="_blank" className="flex items-center">
                   <ExternalLink className="w-4 h-4 mr-2" />
@@ -389,6 +401,12 @@ export function Dashboard() {
         open={showAddModal}
         onOpenChange={setShowAddModal}
         onAdd={handleAddLink}
+      />
+      
+      <ShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        username={currentProfile.username}
       />
     </div>
   );

@@ -9,37 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Camera, Loader2, Save } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAvatar } from "@/hooks/useAvatar";
-
-const THEMES = [
-  {
-    id: 'default',
-    name: 'Padrão',
-    description: 'Tema clássico com fundo branco',
-    preview: 'bg-white border-2 border-gray-200',
-    colors: ['bg-white', 'bg-gray-100', 'bg-gray-800']
-  },
-  {
-    id: 'clean',
-    name: 'Clean',
-    description: 'Design minimalista e limpo',
-    preview: 'bg-gray-50 border-2 border-gray-300',
-    colors: ['bg-gray-50', 'bg-white', 'bg-gray-600']
-  },
-  {
-    id: 'dark',
-    name: 'Dark',
-    description: 'Tema escuro elegante',
-    preview: 'bg-gray-900 border-2 border-gray-700',
-    colors: ['bg-gray-900', 'bg-gray-800', 'bg-white']
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    description: 'Gradiente vibrante estilo Instagram',
-    preview: 'bg-gradient-to-br from-pink-500 via-red-500 to-yellow-400 border-2 border-pink-300',
-    colors: ['bg-pink-500', 'bg-red-500', 'bg-yellow-400']
-  }
-];
+import { ThemeSelector } from "./ThemeSelector";
 
 export function ProfileEditor() {
   const { user, profile, updateProfile } = useAuth();
@@ -165,6 +135,7 @@ export function ProfileEditor() {
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               placeholder="Seu nome completo"
+              maxLength={100}
             />
           </div>
 
@@ -178,6 +149,7 @@ export function ProfileEditor() {
               placeholder="Conte um pouco sobre você..."
               rows={3}
               className="resize-none"
+              maxLength={200}
             />
             <p className="text-xs text-gray-500">
               {formData.bio.length}/200 caracteres
@@ -186,46 +158,11 @@ export function ProfileEditor() {
         </CardContent>
       </Card>
 
-      {/* Temas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tema da Página</CardTitle>
-          <CardDescription>
-            Escolha o visual da sua página pública
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {THEMES.map((theme) => (
-              <div
-                key={theme.id}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                  formData.theme === theme.id
-                    ? 'border-purple-500 bg-purple-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => handleInputChange('theme', theme.id)}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-12 h-12 rounded-lg ${theme.preview} flex-shrink-0`}>
-                    <div className="w-full h-full rounded-lg flex items-center justify-center">
-                      <div className="flex space-x-1">
-                        {theme.colors.map((color, index) => (
-                          <div key={index} className={`w-2 h-2 rounded-full ${color}`} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">{theme.name}</h4>
-                    <p className="text-sm text-gray-600">{theme.description}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Theme Selector */}
+      <ThemeSelector
+        selectedTheme={formData.theme}
+        onThemeChange={(theme) => handleInputChange('theme', theme)}
+      />
 
       {/* Botão Salvar */}
       <div className="flex justify-end">

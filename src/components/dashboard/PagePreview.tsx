@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Eye, Instagram, Youtube, Github, Twitter, Linkedin, Globe, Phone, Mail } from "lucide-react";
+import { ExternalLink, Eye, Instagram, Youtube, Github, Twitter, Linkedin, Globe, Phone, Mail, BarChart3 } from "lucide-react";
 
 interface User {
   id: string;
@@ -11,6 +11,7 @@ interface User {
   username: string;
   avatar_url?: string;
   bio?: string;
+  theme?: string;
 }
 
 interface Link {
@@ -42,8 +43,19 @@ const getIcon = (iconName: string) => {
   return iconMap[iconName as keyof typeof iconMap] || <Globe className="w-5 h-5 text-gray-500" />;
 };
 
+const getThemeBackground = (theme: string) => {
+  const themeMap = {
+    default: 'bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50',
+    clean: 'bg-gray-50',
+    dark: 'bg-gradient-to-br from-gray-900 via-gray-800 to-black',
+    instagram: 'bg-gradient-to-br from-pink-400 via-red-500 to-yellow-500'
+  };
+  return themeMap[theme as keyof typeof themeMap] || themeMap.default;
+};
+
 export function PagePreview({ user, links }: PagePreviewProps) {
   const sortedLinks = [...links].sort((a, b) => a.position - b.position);
+  const totalClicks = links.reduce((sum, link) => sum + link.click_count, 0);
 
   return (
     <Card>
@@ -66,9 +78,9 @@ export function PagePreview({ user, links }: PagePreviewProps) {
       </CardHeader>
       <CardContent>
         {/* Mobile Preview Container */}
-        <div className="bg-gray-900 rounded-2xl p-2 mx-auto" style={{ width: '280px' }}>
+        <div className="bg-gray-900 rounded-2xl p-2 mx-auto shadow-2xl" style={{ width: '280px' }}>
           <div className="bg-white rounded-xl overflow-hidden" style={{ height: '500px' }}>
-            <div className="p-6 text-center bg-gradient-to-br from-purple-50 to-pink-50 h-full overflow-y-auto">
+            <div className={`p-6 text-center h-full overflow-y-auto ${getThemeBackground(user.theme || 'default')}`}>
               {/* Profile Section */}
               <div className="mb-6">
                 <Avatar className="w-20 h-20 mx-auto mb-4 border-4 border-white shadow-lg">
@@ -83,7 +95,7 @@ export function PagePreview({ user, links }: PagePreviewProps) {
                 </h1>
                 
                 {user.bio && (
-                  <p className="text-sm text-gray-600 mb-2">{user.bio}</p>
+                  <p className="text-sm text-gray-600 mb-2 px-2">{user.bio}</p>
                 )}
                 
                 <Badge variant="secondary" className="text-xs">
@@ -116,6 +128,11 @@ export function PagePreview({ user, links }: PagePreviewProps) {
                           <p className="font-medium text-gray-900 text-sm truncate">
                             {link.title}
                           </p>
+                          {link.click_count > 0 && (
+                            <p className="text-xs text-gray-500">
+                              {link.click_count} {link.click_count === 1 ? 'clique' : 'cliques'}
+                            </p>
+                          )}
                         </div>
                         <ExternalLink className="w-4 h-4 text-gray-400" />
                       </div>
@@ -134,13 +151,24 @@ export function PagePreview({ user, links }: PagePreviewProps) {
           </div>
         </div>
 
-        {/* URL Display */}
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600 mb-2">Sua página está em:</p>
-          <div className="bg-gray-50 rounded-lg p-2">
-            <code className="text-sm font-mono text-purple-600">
-              linkbio.ai/{user.username}
-            </code>
+        {/* Stats & URL Display */}
+        <div className="mt-4 space-y-3">
+          {totalClicks > 0 && (
+            <div className="flex items-center justify-center space-x-4 p-2 bg-green-50 rounded-lg">
+              <BarChart3 className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-green-700 font-medium">
+                {totalClicks} {totalClicks === 1 ? 'clique total' : 'cliques totais'}
+              </span>
+            </div>
+          )}
+          
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-2">Sua página está em:</p>
+            <div className="bg-gray-50 rounded-lg p-2">
+              <code className="text-sm font-mono text-purple-600">
+                linkbio.ai/{user.username}
+              </code>
+            </div>
           </div>
         </div>
       </CardContent>
