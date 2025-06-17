@@ -17,7 +17,8 @@ import {
   Users,
   AlertCircle,
   Loader2,
-  User
+  User,
+  Crown
 } from "lucide-react";
 import { LinksList } from "./LinksList";
 import { AddLinkModal } from "./AddLinkModal";
@@ -27,10 +28,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLinks } from "@/hooks/useLinks";
 import { useNavigate } from "react-router-dom";
 import { ShareModal } from "./ShareModal";
+import { PlanLimitAlert } from "./PlanLimitAlert";
+import { FounderBadge } from "./FounderBadge";
+import { usePlan } from "@/hooks/usePlan";
 
 export function Dashboard() {
   const { user, profile, loading, error, signOut, isMasterAdmin, isMaiconRocha } = useAuth();
   const { links, loading: linksLoading, addLink, updateLink, deleteLink, reorderLinks } = useLinks();
+  const { isPro, maxLinks, isFounder, canUpgrade, founderCount, openCustomerPortal } = usePlan();
+  
   const [showAddModal, setShowAddModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
@@ -98,6 +104,8 @@ export function Dashboard() {
     theme: 'default',
     is_verified: true,
     role: 'master_admin',
+    plan: 'pro', // Add plan for bypass
+    is_founder: true, // Add founder status for bypass
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   } : null);
@@ -121,10 +129,23 @@ export function Dashboard() {
   const isAdmin = isMasterAdmin() || isMaiconBypass;
 
   const handleAddLink = async (newLink: { title: string; url: string; is_active: boolean }) => {
+    // Check plan limits before adding
+    if (!isPro && activeLinks >= maxLinks) {
+      return; // The AddLinkModal should handle this check too
+    }
+    
     await addLink({
       title: newLink.title,
       url: newLink.url
     });
+  };
+
+  const handleManageSubscription = async () => {
+    try {
+      await openCustomerPortal();
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+    }
   };
 
   return (
@@ -140,6 +161,10 @@ export function Dashboard() {
               <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 LinkBio.AI
               </h1>
+              
+              {/* Plan Badge */}
+              <FounderBadge isFounder={isFounder} isPro={isPro} size="sm" />
+              
               {(isAdmin || isMaiconBypass) && (
                 <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-100 rounded-full">
                   <Shield className="w-3 h-3 text-yellow-600" />
@@ -167,6 +192,18 @@ export function Dashboard() {
                   Ver Página
                 </a>
               </Button>
+              
+              {isPro && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleManageSubscription}
+                  className="flex items-center"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Gerenciar Assinatura
+                </Button>
+              )}
               
               {(isAdmin || isMaiconBypass) && (
                 <Button variant="outline" size="sm" className="flex items-center">
@@ -201,31 +238,60 @@ export function Dashboard() {
             <div className={`rounded-xl p-6 text-white ${
               isAdmin || isMaiconBypass
                 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
-                : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                : isPro
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                : 'bg-gradient-to-r from-blue-500 to-indigo-500'
             }`}>
-              <h2 className="text-2xl font-bold mb-2">
-                Olá, {currentProfile.name.split(' ')[0]}! 👋
-                {(isAdmin || isMaiconBypass) && ' 🛡️'}
-              </h2>
-              <p className="opacity-90 mb-4">
-                {(isAdmin || isMaiconBypass) ? (
-                  <>
-                    Acesso de <strong>{isMaiconBypass ? 'Desenvolvedor' : 'Administrador Master'}</strong> ativo
-                    {isMaiconBypass && ' (Modo Desenvolvimento)'}
-                  </>
-                ) : (
-                  <>Sua página está ativa em: <span className="font-semibold">linkbio.ai/{currentProfile.username}</span></>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">
+                    Olá, {currentProfile.name.split(' ')[0]}! 👋
+                    {(isAdmin || isMaiconBypass) && ' 🛡️'}
+                    {isFounder && ' 👑'}
+                  </h2>
+                  <p className="opacity-90 mb-4">
+                    {(isAdmin || isMaiconBypass) ? (
+                      <>
+                        Acesso de <strong>{isMaiconBypass ? 'Desenvolvedor' : 'Administrador Master'}</strong> ativo
+                        {isMaiconBypass && ' (Modo Desenvolvimento)'}
+                      </>
+                    ) : isPro ? (
+                      <>
+                        Sua página <strong>{isFounder ? 'Fundador ' : ''}PRO</strong> está ativa em: 
+                        <span className="font-semibold"> linkbio.ai/{currentProfile.username}</span>
+                      </>
+                    ) : (
+                      <>
+                        Sua página está ativa em: <span className="font-semibold">linkbio.ai/{currentProfile.username}</span>
+                        <br />
+                        <span className="text-sm opacity-75">Plano Free: {activeLinks}/{maxLinks} links usados</span>
+                      </>
+                    )}
+                  </p>
+                </div>
+                
+                {!isPro && canUpgrade && (
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    onClick={() => window.location.href = '/upgrade'}
+                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    Ser Fundador PRO
+                  </Button>
                 )}
-              </p>
-              <Button variant="secondary" size="sm" className={
-                isAdmin || isMaiconBypass
-                  ? "bg-white/20 border-white/30 text-white hover:bg-white/30"
-                  : "bg-white/20 border-white/30 text-white hover:bg-white/30"
-              }>
-                <Share2 className="w-4 h-4 mr-2" />
-                {(isAdmin || isMaiconBypass) ? 'Painel Admin' : 'Compartilhar Página'}
-              </Button>
+              </div>
             </div>
+
+            {/* Plan Limit Alert */}
+            {!isPro && (
+              <PlanLimitAlert 
+                currentCount={activeLinks} 
+                itemType="links" 
+                showUpgrade={canUpgrade}
+              />
+            )}
 
             {/* Stats Cards */}
             <div className="grid md:grid-cols-3 gap-4">
@@ -251,22 +317,42 @@ export function Dashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">{activeLinks}</div>
                   <p className="text-xs text-muted-foreground">
-                    de {links.length} total
+                    {isPro ? 'Ilimitados' : `de ${maxLinks} disponíveis`}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Visitantes</CardTitle>
-                  <BarChart3 className="h-4 w-4 text-blue-600" />
+                  <CardTitle className="text-sm font-medium">
+                    {isPro ? 'Plano PRO' : 'Visitantes'}
+                  </CardTitle>
+                  {isPro ? (
+                    <Crown className="h-4 w-4 text-yellow-600" />
+                  ) : (
+                    <BarChart3 className="h-4 w-4 text-blue-600" />
+                  )}
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{Math.floor(totalClicks * 0.8)}</div>
-                  <p className="text-xs text-muted-foreground">
-                    <Calendar className="inline w-3 h-3 mr-1" />
-                    últimos 30 dias
-                  </p>
+                  {isPro ? (
+                    <>
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {isFounder ? 'Fundador' : 'Premium'}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        <Shield className="inline w-3 h-3 mr-1" />
+                        Recursos ilimitados
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-2xl font-bold text-blue-600">{Math.floor(totalClicks * 0.8)}</div>
+                      <p className="text-xs text-muted-foreground">
+                        <Calendar className="inline w-3 h-3 mr-1" />
+                        últimos 30 dias
+                      </p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -286,9 +372,18 @@ export function Dashboard() {
                         <CardTitle>Seus Links</CardTitle>
                         <CardDescription>
                           Gerencie e organize seus links
+                          {!isPro && (
+                            <span className="block text-orange-600 font-medium">
+                              {activeLinks}/{maxLinks} links usados
+                            </span>
+                          )}
                         </CardDescription>
                       </div>
-                      <Button onClick={() => setShowAddModal(true)} className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+                      <Button 
+                        onClick={() => setShowAddModal(true)} 
+                        disabled={!isPro && activeLinks >= maxLinks}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                      >
                         <Plus className="w-4 h-4 mr-2" />
                         Adicionar Link
                       </Button>
@@ -345,50 +440,68 @@ export function Dashboard() {
           <div className="space-y-6">
             <PagePreview user={currentProfile} links={links.filter(link => link.is_active)} />
             
-            {/* Quick Tips */}
+            {/* Plan Info Card */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">
-                  {(isAdmin || isMaiconBypass) ? '🛡️ Painel Admin' : '💡 Dicas Rápidas'}
+                <CardTitle className="text-lg flex items-center">
+                  {isPro ? (
+                    <>
+                      <Crown className="w-5 h-5 text-yellow-500 mr-2" />
+                      {isFounder ? 'Fundador PRO' : 'Plano PRO'}
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-5 h-5 text-blue-500 mr-2" />
+                      Plano Free
+                    </>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {(isAdmin || isMaiconBypass) ? (
+                {isPro ? (
                   <>
                     <div className="text-sm">
-                      <p className="font-medium text-yellow-700">🔑 Acesso Total</p>
-                      <p className="text-gray-600">Você pode ver e gerenciar todos os dados</p>
+                      <p className="font-medium text-green-700">✅ Recursos Ilimitados</p>
+                      <p className="text-gray-600">Links, temas e analytics sem limite</p>
                     </div>
-                    <div className="text-sm">
-                      <p className="font-medium text-purple-700">👥 Gerenciar Usuários</p>
-                      <p className="text-gray-600">Visualize e modere contas de usuários</p>
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-medium text-blue-700">📊 Analytics Global</p>
-                      <p className="text-gray-600">Acesse estatísticas de todo o sistema</p>
-                    </div>
-                    {isMaiconBypass && (
+                    {isFounder && (
                       <div className="text-sm">
-                        <p className="font-medium text-red-700">🚧 Modo Desenvolvimento</p>
-                        <p className="text-gray-600">Bypass ativo - remover em produção</p>
+                        <p className="font-medium text-yellow-700">👑 Status Fundador</p>
+                        <p className="text-gray-600">Você é um dos {founderCount.toLocaleString()} primeiros!</p>
                       </div>
                     )}
+                    <div className="text-sm">
+                      <p className="font-medium text-purple-700">🛠️ Gerenciar Assinatura</p>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={handleManageSubscription}
+                        className="mt-2"
+                      >
+                        Abrir Portal do Cliente
+                      </Button>
+                    </div>
                   </>
                 ) : (
-                  // ... keep existing code (tips for regular users)
                   <>
                     <div className="text-sm">
-                      <p className="font-medium text-green-700">✅ Adicione 3-5 links principais</p>
-                      <p className="text-gray-600">Seus seguidores preferem menos opções</p>
+                      <p className="font-medium text-blue-700">📊 Seu Uso Atual</p>
+                      <p className="text-gray-600">{activeLinks}/{maxLinks} links • 1/4 temas</p>
                     </div>
-                    <div className="text-sm">
-                      <p className="font-medium text-blue-700">📱 Teste no mobile</p>
-                      <p className="text-gray-600">90% dos acessos são pelo celular</p>
-                    </div>
-                    <div className="text-sm">
-                      <p className="font-medium text-purple-700">📊 Monitore os cliques</p>
-                      <p className="text-gray-600">Use os dados para otimizar</p>
-                    </div>
+                    {canUpgrade && (
+                      <div className="text-sm">
+                        <p className="font-medium text-purple-700">🚀 Upgrade Disponível</p>
+                        <p className="text-gray-600 mb-2">Seja um dos {(10000 - founderCount).toLocaleString()} fundadores restantes!</p>
+                        <Button 
+                          size="sm" 
+                          onClick={() => window.location.href = '/upgrade'}
+                          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                        >
+                          <Crown className="w-4 h-4 mr-1" />
+                          $1/mês
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
               </CardContent>

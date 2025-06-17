@@ -97,9 +97,14 @@ export type Database = {
           bio: string | null
           created_at: string | null
           id: string
+          is_founder: boolean | null
           is_verified: boolean | null
           name: string
+          plan: string | null
+          plan_expires: string | null
           role: string | null
+          stripe_customer_id: string | null
+          subscription_id: string | null
           theme: string | null
           updated_at: string | null
           username: string
@@ -109,9 +114,14 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id: string
+          is_founder?: boolean | null
           is_verified?: boolean | null
           name: string
+          plan?: string | null
+          plan_expires?: string | null
           role?: string | null
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
           theme?: string | null
           updated_at?: string | null
           username: string
@@ -121,9 +131,14 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           id?: string
+          is_founder?: boolean | null
           is_verified?: boolean | null
           name?: string
+          plan?: string | null
+          plan_expires?: string | null
           role?: string | null
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
           theme?: string | null
           updated_at?: string | null
           username?: string
@@ -135,6 +150,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_be_founder: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      get_founder_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       is_master_admin: {
         Args: { user_id: string }
         Returns: boolean
