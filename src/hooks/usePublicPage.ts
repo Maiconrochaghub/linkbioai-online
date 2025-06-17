@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,6 +7,7 @@ interface PublicProfile {
   username: string;
   avatar_url?: string;
   bio?: string;
+  theme?: string;
 }
 
 interface PublicLink {
@@ -43,7 +43,7 @@ export function usePublicPage(username: string) {
       // Fetch profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, name, username, avatar_url, bio')
+        .select('id, name, username, avatar_url, bio, theme')
         .eq('username', username)
         .single();
 
