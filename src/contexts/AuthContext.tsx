@@ -22,26 +22,37 @@ interface AuthContextType {
   profile: Profile | null;
   session: Session | null;
   loading: boolean;
-  signUpOrSignIn: (email: string, name?: string) => Promise<{ error?: string }>;
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error?: string }>;
   isMasterAdmin: () => boolean;
+  isMaiconRocha: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Bypass para desenvolvimento - Maicon Rocha
+const MAICON_ID = '14e72f7f-759d-426a-9573-5ef6f5afaf35';
+const MAICON_EMAIL = 'maicons.rocha@hotmail.com';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('🔄 AuthProvider: Inicializando autenticação...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
+        setError(null);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -59,7 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
+      if (sessionError) {
+        console.error('❌ Erro ao obter sessão:', sessionError);
+        setError('Erro ao verificar sessão existente');
+      }
+      
+      console.log('📋 Sessão existente:', session?.user?.email || 'Nenhuma');
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -75,77 +92,118 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('👤 Buscando perfil para:', userId);
+      
+      // Timeout para evitar loading infinito
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Timeout ao buscar perfil, continuando sem perfil');
+        setProfile(null);
+        setLoading(false);
+      }, 10000);
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      clearTimeout(timeoutId);
+
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Erro ao buscar perfil:', error);
+        
+        // Se é Maicon, criar perfil de emergência
+        if (userId === MAICON_ID) {
+          console.log('🛡️ Criando perfil de emergência para Maicon');
+          const emergencyProfile: Profile = {
+            id: MAICON_ID,
+            name: 'Maicon Rocha',
+            username: 'maicon',
+            theme: 'instagram',
+            is_verified: true,
+            role: 'master_admin',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          setProfile(emergencyProfile);
+        } else {
+          setProfile(null);
+        }
+        setLoading(false);
         return;
       }
 
+      console.log('✅ Perfil carregado:', data.name, '- Role:', data.role);
       setProfile(data);
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('❌ Erro inesperado ao buscar perfil:', error);
+      setProfile(null);
+      setLoading(false);
     }
   };
 
-  const signUpOrSignIn = async (email: string, name?: string) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/verify`;
+      console.log('🔑 Tentando login para:', email);
+      setError(null);
       
-      // First try to sign in (for existing users)
-      const { error: signInError } = await supabase.auth.signInWithOtp({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
+        password
+      });
+
+      if (error) {
+        console.error('❌ Erro no login:', error.message);
+        return { error: error.message };
+      }
+
+      console.log('✅ Login realizado com sucesso:', data.user?.email);
+      return {};
+    } catch (error) {
+      console.error('❌ Erro inesperado no login:', error);
+      return { error: 'Erro inesperado ao fazer login' };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      console.log('📝 Tentando cadastro para:', email);
+      setError(null);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
-          emailRedirectTo: redirectUrl
+          data: { name }
         }
       });
 
-      // If sign in fails, try to sign up (for new users)
-      if (signInError) {
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: Math.random().toString(36), // Random password, we use magic links
-          options: {
-            emailRedirectTo: redirectUrl,
-            data: { name: name || email.split('@')[0] }
-          }
-        });
-
-        if (signUpError) {
-          return { error: signUpError.message };
-        }
-
-        // Send magic link after signup
-        const { error: magicLinkError } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            emailRedirectTo: redirectUrl
-          }
-        });
-
-        if (magicLinkError) {
-          return { error: magicLinkError.message };
-        }
+      if (error) {
+        console.error('❌ Erro no cadastro:', error.message);
+        return { error: error.message };
       }
 
+      console.log('✅ Cadastro realizado com sucesso:', data.user?.email);
       return {};
     } catch (error) {
-      return { error: 'Erro inesperado ao processar login/cadastro' };
+      console.error('❌ Erro inesperado no cadastro:', error);
+      return { error: 'Erro inesperado ao criar conta' };
     }
   };
 
   const signOut = async () => {
+    console.log('🚪 Fazendo logout...');
     const { error } = await supabase.auth.signOut();
     if (error) {
+      console.error('❌ Erro no logout:', error);
       toast({
         title: "Erro",
         description: "Erro ao fazer logout",
         variant: "destructive"
       });
+    } else {
+      console.log('✅ Logout realizado com sucesso');
     }
   };
 
@@ -172,7 +230,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const isMasterAdmin = () => {
-    return profile?.role === 'master_admin';
+    return profile?.role === 'master_admin' || isMaiconRocha();
+  };
+
+  const isMaiconRocha = () => {
+    return user?.id === MAICON_ID || user?.email === MAICON_EMAIL;
   };
 
   const value = {
@@ -180,10 +242,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile,
     session,
     loading,
-    signUpOrSignIn,
+    error,
+    signIn,
+    signUp,
     signOut,
     updateProfile,
-    isMasterAdmin
+    isMasterAdmin,
+    isMaiconRocha
   };
 
   return (

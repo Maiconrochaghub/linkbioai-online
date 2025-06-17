@@ -1,34 +1,38 @@
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Send, ArrowLeft } from "lucide-react";
+import { Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
-  const { signUpOrSignIn } = useAuth();
+  const { signIn, isMaiconRocha } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) {
+    if (!formData.email.trim() || !formData.password.trim()) {
       toast({
-        title: "Email obrigatório",
-        description: "Por favor, insira seu email.",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha email e senha.",
         variant: "destructive"
       });
       return;
     }
 
-    if (!email.includes("@")) {
+    if (!formData.email.includes("@")) {
       toast({
         title: "Email inválido",
         description: "Por favor, insira um email válido.",
@@ -40,20 +44,22 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      const { error } = await signUpOrSignIn(email);
+      const { error } = await signIn(formData.email, formData.password);
       
       if (error) {
         toast({
-          title: "Erro",
+          title: "Erro no login",
           description: error,
           variant: "destructive"
         });
       } else {
-        setEmailSent(true);
         toast({
-          title: "Link de acesso enviado! 📧",
-          description: "Verifique seu email e clique no link para acessar seu painel.",
+          title: "Login realizado! 🎉",
+          description: "Redirecionando para seu painel...",
         });
+        
+        // Redirect to dashboard after successful login
+        navigate("/dashboard");
       }
     } catch (error) {
       toast({
@@ -66,9 +72,20 @@ export default function LoginPage() {
     }
   };
 
-  const handleResetForm = () => {
-    setEmailSent(false);
-    setEmail("");
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Bypass para Maicon durante desenvolvimento
+  const handleMaiconBypass = () => {
+    toast({
+      title: "🛡️ Acesso de Desenvolvedor",
+      description: "Redirecionando para o dashboard...",
+    });
+    navigate("/dashboard");
   };
 
   return (
@@ -89,86 +106,95 @@ export default function LoginPage() {
               LinkBio.AI
             </h1>
           </div>
+          
+          {/* Botão de bypass para Maicon durante desenvolvimento */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={handleMaiconBypass}
+              variant="outline"
+              size="sm"
+              className="mb-4 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+            >
+              🛡️ Acesso Dev (Maicon)
+            </Button>
+          )}
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
-              {emailSent ? "Link Enviado!" : "Acessar Painel"}
+              Acessar Painel
             </CardTitle>
             <CardDescription className="text-center">
-              {emailSent 
-                ? "Verifique seu email e clique no link para acessar"
-                : "Digite seu email para receber o link de acesso"
-              }
+              Digite suas credenciais para entrar
             </CardDescription>
           </CardHeader>
           
           <CardContent>
-            {!emailSent ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Email
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-11"
-                    />
-                  </div>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      Acessar Painel
-                      <Send className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                  <Mail className="w-8 h-8 text-green-600" />
-                </div>
-                
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
-                    Link de acesso enviado para:
-                  </p>
-                  <p className="font-medium text-gray-900">{email}</p>
-                  <p className="text-xs text-gray-500">
-                    Se já possui conta, será feito o login. Se não, sua conta será criada automaticamente.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Button 
-                    onClick={handleResetForm}
-                    variant="outline" 
-                    className="w-full"
-                  >
-                    Usar outro email
-                  </Button>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium">
+                  Email
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    className="pl-10 h-11"
+                  />
                 </div>
               </div>
-            )}
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Digite sua senha"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    className="pl-10 pr-10 h-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full h-11 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Entrando...
+                  </>
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </form>
+
+            <div className="text-center text-sm text-gray-600 mt-4">
+              Não tem conta?{" "}
+              <Link to="/signup" className="text-purple-600 hover:text-purple-700 font-medium">
+                Criar conta grátis
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>
