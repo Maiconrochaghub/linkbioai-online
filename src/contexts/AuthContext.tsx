@@ -13,6 +13,11 @@ interface Profile {
   theme: string;
   is_verified: boolean;
   role: string;
+  plan?: string;
+  plan_expires?: string;
+  stripe_customer_id?: string;
+  subscription_id?: string;
+  is_founder?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -101,11 +101,12 @@ export function Dashboard() {
     id: '14e72f7f-759d-426a-9573-5ef6f5afaf35',
     name: 'Maicon Rocha',
     username: 'maicon',
+    avatar_url: undefined,
     theme: 'default',
     is_verified: true,
     role: 'master_admin',
-    plan: 'pro', // Add plan for bypass
-    is_founder: true, // Add founder status for bypass
+    plan: 'pro',
+    is_founder: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   } : null);
