@@ -26,7 +26,10 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   error: string | null;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<{ error: string | null }>;
   isMasterAdmin: () => boolean;
   isMaiconRocha: () => boolean;
   refreshProfile: () => Promise<void>;
@@ -67,6 +70,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshProfile = async () => {
     if (user) {
       await fetchProfile(user.id);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        return { error: error.message };
+      }
+      
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Erro desconhecido' };
+    }
+  };
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name,
+          }
+        }
+      });
+      
+      if (error) {
+        return { error: error.message };
+      }
+      
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Erro desconhecido' };
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!user) {
+      return { error: 'Usuário não autenticado' };
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      // Update local profile state
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Erro ao atualizar perfil' };
     }
   };
 
@@ -119,7 +188,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     loading,
     error,
+    signIn,
+    signUp,
     signOut,
+    updateProfile,
     isMasterAdmin,
     isMaiconRocha,
     refreshProfile,
