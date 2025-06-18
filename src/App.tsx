@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import PublicPage from "./pages/PublicPage";
 import NotFound from "./pages/NotFound";
+import DemoPage from "./pages/DemoPage";
 import { Dashboard } from "./components/dashboard/Dashboard";
 import UpgradePage from "./pages/UpgradePage";
 
@@ -70,6 +72,9 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            
+            {/* Demo page - public */}
+            <Route path="/demo" element={<DemoPage />} />
             
             {/* Rotas públicas (redireciona se logado) */}
             <Route path="/login" element={
