@@ -19,7 +19,7 @@ export function PricingSection() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {/* Free Plan */}
-          <div className="bg-white rounded-3xl p-8 border-2 border-gray-200 shadow-lg">
+          <div className="bg-white rounded-3xl p-8 border-2 border-gray-200 shadow-lg hover:shadow-xl transition-shadow">
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Gratuito</h3>
               <p className="text-gray-600 mb-4">Para começar</p>
@@ -51,14 +51,14 @@ export function PricingSection() {
             </div>
 
             <Link to="/signup" className="block">
-              <Button className="w-full" variant="outline">
+              <Button className="w-full transform transition-transform hover:scale-105" variant="outline">
                 Começar Grátis
               </Button>
             </Link>
           </div>
 
           {/* PRO Plan */}
-          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 border-2 border-purple-300 shadow-2xl relative">
+          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 border-2 border-purple-300 shadow-2xl relative hover:shadow-3xl transition-shadow">
             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
               <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2">
                 🔥 OFERTA FUNDADOR
@@ -85,7 +85,7 @@ export function PricingSection() {
               </div>
               <div className="flex items-center">
                 <Star className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                <span className="font-medium">4 temas exclusivos</span>
+                <span className="font-medium">5 temas exclusivos</span>
               </div>
               <div className="flex items-center">
                 <Star className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
@@ -110,7 +110,7 @@ export function PricingSection() {
             </div>
 
             <Link to="/upgrade" className="block">
-              <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold">
+              <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold transform transition-transform hover:scale-105">
                 <Crown className="w-5 h-5 mr-2" />
                 Ser Fundador PRO
               </Button>

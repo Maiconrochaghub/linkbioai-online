@@ -67,15 +67,7 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: { 
-              name: "LinkBio PRO - Founder Plan",
-              description: "Unlimited links, all themes, advanced analytics"
-            },
-            unit_amount: 100, // $1.00
-            recurring: { interval: "month" },
-          },
+          price: "price_1Rawf6H7TnhtLpgPu0gkTAoA", // Official Price ID
           quantity: 1,
         },
       ],
