@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,46 +20,36 @@ export interface Link {
 export function useLinks() {
   const [links, setLinks] = useState<Link[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, isMasterAdmin, isMaiconRocha } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
-  // Bypass para Maicon em desenvolvimento ou IDs de administradores master
-  const isMaiconBypass = isMaiconRocha() && process.env.NODE_ENV === 'development';
-  const MAICON_IDS = [
-    '14e72f7f-759d-426a-9573-5ef6f5afaf35', // ID antigo
-    'bb2d39b1-7a98-4ea3-aff2-ee2523cb485b'  // ID novo
-  ];
-  
-  const effectiveUserId = user?.id || (isMaiconBypass ? MAICON_IDS[0] : null);
-
   useEffect(() => {
-    if (effectiveUserId || isMaiconBypass) {
+    if (user && profile) {
       fetchLinks();
     } else {
       setLoading(false);
+      setLinks([]);
     }
-  }, [effectiveUserId, isMaiconBypass]);
+  }, [user, profile]);
 
   const fetchLinks = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log('🔗 Buscando links para usuário:', effectiveUserId || 'Maicon (bypass)');
+      console.log('🔗 Fetching links for user:', user.id);
       
-      // Master admin pode ver todos os links, usuários comuns apenas os seus
-      let query = supabase
+      const { data, error } = await supabase
         .from('links')
         .select('*')
+        .eq('user_id', user.id)
         .order('position', { ascending: true });
 
-      // Se não for master admin e tiver user ID, filtrar por user_id
-      if (!isMasterAdmin() && !isMaiconBypass && effectiveUserId) {
-        query = query.eq('user_id', effectiveUserId);
-      }
-
-      const { data, error } = await query;
-
       if (error) {
-        console.error('❌ Erro ao buscar links:', error);
+        console.error('❌ Error fetching links:', error);
         toast({
           title: "Erro",
           description: "Erro ao carregar links",
@@ -68,10 +59,10 @@ export function useLinks() {
         return;
       }
 
-      console.log('✅ Links carregados:', data?.length || 0);
+      console.log('✅ Links loaded:', data?.length || 0);
       setLinks(data || []);
     } catch (error) {
-      console.error('❌ Erro inesperado ao buscar links:', error);
+      console.error('❌ Unexpected error fetching links:', error);
       setLinks([]);
     } finally {
       setLoading(false);
@@ -79,7 +70,7 @@ export function useLinks() {
   };
 
   const addLink = async (linkData: { title: string; url: string }) => {
-    if (!effectiveUserId && !isMaiconBypass) {
+    if (!user) {
       toast({
         title: "Erro",
         description: "Usuário não identificado",
@@ -89,7 +80,7 @@ export function useLinks() {
     }
 
     try {
-      console.log('➕ Adicionando link:', linkData.title);
+      console.log('➕ Adding link:', linkData.title);
       
       // Get the highest position
       const maxPosition = links.length > 0 ? Math.max(...links.map(l => l.position)) : -1;
@@ -97,7 +88,7 @@ export function useLinks() {
       const { data, error } = await supabase
         .from('links')
         .insert([{
-          user_id: effectiveUserId || MAICON_IDS[0],
+          user_id: user.id,
           title: linkData.title,
           url: linkData.url,
           position: maxPosition + 1,
@@ -108,7 +99,7 @@ export function useLinks() {
         .single();
 
       if (error) {
-        console.error('❌ Erro ao adicionar link:', error);
+        console.error('❌ Error adding link:', error);
         toast({
           title: "Erro",
           description: "Erro ao adicionar link",
@@ -117,14 +108,14 @@ export function useLinks() {
         return;
       }
 
-      console.log('✅ Link adicionado:', data.title);
+      console.log('✅ Link added:', data.title);
       setLinks(prev => [...prev, data]);
       toast({
         title: "Sucesso",
         description: "Link adicionado com sucesso!",
       });
     } catch (error) {
-      console.error('❌ Erro inesperado ao adicionar link:', error);
+      console.error('❌ Unexpected error adding link:', error);
       toast({
         title: "Erro",
         description: "Erro inesperado ao adicionar link",
@@ -135,7 +126,7 @@ export function useLinks() {
 
   const updateLink = async (id: string, updates: Partial<Link>) => {
     try {
-      console.log('✏️ Atualizando link:', id);
+      console.log('✏️ Updating link:', id);
       
       const { error } = await supabase
         .from('links')
@@ -143,7 +134,7 @@ export function useLinks() {
         .eq('id', id);
 
       if (error) {
-        console.error('❌ Erro ao atualizar link:', error);
+        console.error('❌ Error updating link:', error);
         toast({
           title: "Erro",
           description: "Erro ao atualizar link",
@@ -156,19 +147,19 @@ export function useLinks() {
         link.id === id ? { ...link, ...updates } : link
       ));
 
-      console.log('✅ Link atualizado com sucesso');
+      console.log('✅ Link updated successfully');
       toast({
         title: "Sucesso",
         description: "Link atualizado com sucesso!",
       });
     } catch (error) {
-      console.error('❌ Erro inesperado ao atualizar link:', error);
+      console.error('❌ Unexpected error updating link:', error);
     }
   };
 
   const deleteLink = async (id: string) => {
     try {
-      console.log('🗑️ Deletando link:', id);
+      console.log('🗑️ Deleting link:', id);
       
       const { error } = await supabase
         .from('links')
@@ -176,7 +167,7 @@ export function useLinks() {
         .eq('id', id);
 
       if (error) {
-        console.error('❌ Erro ao deletar link:', error);
+        console.error('❌ Error deleting link:', error);
         toast({
           title: "Erro",
           description: "Erro ao deletar link",
@@ -186,19 +177,19 @@ export function useLinks() {
       }
 
       setLinks(prev => prev.filter(link => link.id !== id));
-      console.log('✅ Link deletado com sucesso');
+      console.log('✅ Link deleted successfully');
       toast({
         title: "Sucesso",
         description: "Link removido com sucesso!",
       });
     } catch (error) {
-      console.error('❌ Erro inesperado ao deletar link:', error);
+      console.error('❌ Unexpected error deleting link:', error);
     }
   };
 
   const reorderLinks = async (reorderedLinks: Link[]) => {
     try {
-      console.log('🔄 Reordenando links...');
+      console.log('🔄 Reordering links...');
       
       // Update positions in database
       const updates = reorderedLinks.map((link, index) => ({
@@ -213,19 +204,19 @@ export function useLinks() {
           .eq('id', update.id);
 
         if (error) {
-          console.error('❌ Erro ao atualizar posição do link:', error);
+          console.error('❌ Error updating link position:', error);
           return;
         }
       }
 
       setLinks(reorderedLinks);
-      console.log('✅ Links reordenados com sucesso');
+      console.log('✅ Links reordered successfully');
       toast({
         title: "Sucesso",
         description: "Ordem dos links atualizada!",
       });
     } catch (error) {
-      console.error('❌ Erro inesperado ao reordenar links:', error);
+      console.error('❌ Unexpected error reordering links:', error);
     }
   };
 

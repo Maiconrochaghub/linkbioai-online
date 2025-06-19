@@ -6,22 +6,22 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function VerificationPage() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
     const handleVerification = async () => {
-      // Wait for auth context to load
-      if (loading) return;
-
+      console.log('🔍 VerificationPage - Starting verification process');
+      
       // If user is already authenticated, redirect to dashboard
       if (user) {
-        console.log('User already authenticated, redirecting to dashboard');
+        console.log('✅ User already authenticated, redirecting to dashboard');
         setStatus('success');
         toast({
           title: "Acesso autorizado! 🎉",
@@ -37,31 +37,45 @@ export default function VerificationPage() {
       // Check for authentication tokens in URL
       const access_token = searchParams.get('access_token');
       const refresh_token = searchParams.get('refresh_token');
-      const token_type = searchParams.get('token_type');
       const type = searchParams.get('type');
 
-      console.log('URL params:', { access_token: !!access_token, refresh_token: !!refresh_token, token_type, type });
+      console.log('🔍 URL verification params:', { 
+        hasAccessToken: !!access_token, 
+        hasRefreshToken: !!refresh_token, 
+        type 
+      });
 
       if (access_token && refresh_token) {
         try {
-          // Supabase should automatically handle the session when tokens are in URL
-          console.log('Tokens found in URL, waiting for auth state change...');
+          console.log('🔄 Setting session with tokens from URL');
           
-          // Give some time for the auth state to update
-          setTimeout(() => {
-            if (!user) {
-              console.log('No user found after waiting, showing error');
-              setStatus('error');
-              toast({
-                title: "Erro na verificação",
-                description: "Não foi possível autenticar. Tente fazer login novamente.",
-                variant: "destructive"
-              });
-            }
-          }, 3000);
+          const { data, error } = await supabase.auth.setSession({
+            access_token,
+            refresh_token
+          });
+
+          if (error) {
+            console.error('❌ Error setting session:', error);
+            throw error;
+          }
+
+          if (data.user) {
+            console.log('✅ Session set successfully, user authenticated');
+            setStatus('success');
+            toast({
+              title: "Verificação concluída! 🎉",
+              description: "Redirecionando para seu painel...",
+            });
+            
+            setTimeout(() => {
+              navigate("/dashboard", { replace: true });
+            }, 1500);
+          } else {
+            throw new Error('No user in session data');
+          }
           
         } catch (error) {
-          console.error('Verification error:', error);
+          console.error('❌ Verification error:', error);
           setStatus('error');
           toast({
             title: "Erro na verificação",
@@ -70,7 +84,7 @@ export default function VerificationPage() {
           });
         }
       } else {
-        console.log('No tokens found in URL');
+        console.log('❌ No tokens found in URL');
         setStatus('error');
         toast({
           title: "Link inválido",
@@ -80,8 +94,11 @@ export default function VerificationPage() {
       }
     };
 
-    handleVerification();
-  }, [searchParams, user, loading, navigate, toast]);
+    // Add a small delay to prevent immediate execution
+    const timeoutId = setTimeout(handleVerification, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [searchParams, user, navigate, toast]);
 
   const handleRetry = () => {
     navigate('/login');
