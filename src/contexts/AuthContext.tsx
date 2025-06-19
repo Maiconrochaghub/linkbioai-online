@@ -17,6 +17,9 @@ export interface Profile {
   stripe_customer_id?: string;
   subscription_id?: string;
   is_founder: boolean;
+  is_admin: boolean;
+  button_color?: string;
+  text_color?: string;
   created_at: string;
   updated_at: string;
 }

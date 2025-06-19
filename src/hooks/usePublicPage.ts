@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,6 +9,11 @@ interface PublicProfile {
   avatar_url?: string;
   bio?: string;
   theme?: string;
+  button_color?: string;
+  text_color?: string;
+  plan?: string;
+  is_founder?: boolean;
+  is_admin?: boolean;
 }
 
 interface PublicLink {
@@ -19,9 +25,17 @@ interface PublicLink {
   click_count: number;
 }
 
+interface PublicSocialLink {
+  id: string;
+  platform: string;
+  url: string;
+  position: number;
+}
+
 interface PublicPageData {
   profile: PublicProfile;
   links: PublicLink[];
+  socialLinks?: PublicSocialLink[];
 }
 
 export function usePublicPage(username: string) {
@@ -43,7 +57,7 @@ export function usePublicPage(username: string) {
       // Fetch profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, name, username, avatar_url, bio, theme')
+        .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
         .eq('username', username)
         .single();
 
@@ -67,9 +81,22 @@ export function usePublicPage(username: string) {
         return;
       }
 
+      // Fetch social links
+      const { data: socialLinks, error: socialLinksError } = await supabase
+        .from('social_links')
+        .select('id, platform, url, position')
+        .eq('user_id', profile.id)
+        .order('position', { ascending: true });
+
+      if (socialLinksError) {
+        console.error('Error fetching social links:', socialLinksError);
+        // Don't return error for social links, just log it
+      }
+
       setData({
         profile,
-        links: links || []
+        links: links || [],
+        socialLinks: socialLinks || []
       });
     } catch (error) {
       console.error('Error fetching public page:', error);

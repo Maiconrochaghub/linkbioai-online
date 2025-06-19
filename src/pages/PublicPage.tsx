@@ -13,7 +13,8 @@ import {
   Phone, 
   Mail,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Music
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePublicPage } from "@/hooks/usePublicPage";
@@ -28,8 +29,26 @@ const getIcon = (iconName: string) => {
     whatsapp: <Phone className="w-6 h-6 text-green-500" />,
     email: <Mail className="w-6 h-6 text-gray-600" />,
     website: <Globe className="w-6 h-6 text-blue-500" />,
+    tiktok: <Music className="w-6 h-6 text-black" />,
+    facebook: <Globe className="w-6 h-6 text-blue-600" />,
   };
   return iconMap[iconName as keyof typeof iconMap] || <Globe className="w-6 h-6 text-gray-500" />;
+};
+
+const getSocialIcon = (platform: string) => {
+  const iconMap = {
+    instagram: <Instagram className="w-5 h-5 text-pink-500" />,
+    youtube: <Youtube className="w-5 h-5 text-red-500" />,
+    twitter: <Twitter className="w-5 h-5 text-blue-400" />,
+    linkedin: <Linkedin className="w-5 h-5 text-blue-600" />,
+    github: <Github className="w-5 h-5 text-gray-700" />,
+    whatsapp: <Phone className="w-5 h-5 text-green-500" />,
+    email: <Mail className="w-5 h-5 text-gray-600" />,
+    website: <Globe className="w-5 h-5 text-blue-500" />,
+    tiktok: <Music className="w-5 h-5 text-black" />,
+    facebook: <Globe className="w-5 h-5 text-blue-600" />,
+  };
+  return iconMap[platform as keyof typeof iconMap] || <Globe className="w-5 h-5 text-gray-500" />;
 };
 
 const getThemeClasses = (theme: string) => {
@@ -98,6 +117,10 @@ const PublicPage = () => {
     window.open(link.url, '_blank', 'noopener,noreferrer');
   };
 
+  const handleSocialClick = (url: string, platform: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center">
@@ -141,8 +164,12 @@ const PublicPage = () => {
     );
   }
 
-  const { profile, links } = data;
+  const { profile, links, socialLinks } = data;
   const theme = getThemeClasses(profile.theme || 'default');
+  
+  // Use custom colors if available
+  const buttonColor = profile.button_color || '#8B5CF6';
+  const textColor = profile.text_color || '#1F2937';
 
   return (
     <div className={theme.background}>
@@ -175,19 +202,26 @@ const PublicPage = () => {
             </AvatarFallback>
           </Avatar>
           
-          <h1 className={`text-2xl font-bold mb-2 ${theme.text}`}>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: textColor }}>
             {profile.name}
           </h1>
           
           {profile.bio && (
-            <div className={`mb-3 whitespace-pre-line text-sm leading-relaxed ${theme.textSecondary}`}>
+            <div className="mb-3 whitespace-pre-line text-sm leading-relaxed" style={{ color: textColor, opacity: 0.8 }}>
               {profile.bio}
             </div>
           )}
           
-          <Badge variant="secondary" className={`text-sm ${theme.badge}`}>
-            @{profile.username}
-          </Badge>
+          <div className="flex items-center justify-center gap-2">
+            <Badge variant="secondary" className={`text-sm ${theme.badge}`}>
+              @{profile.username}
+            </Badge>
+            {profile.is_founder && (
+              <Badge variant="secondary" className="text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
+                Founder PRO
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Links Section */}
@@ -196,9 +230,12 @@ const PublicPage = () => {
             <button
               key={link.id}
               onClick={() => handleLinkClick(link)}
-              className={`w-full rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border group transform hover:scale-105 fade-in-up ${theme.button}`}
+              className="w-full rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border group transform hover:scale-105 fade-in-up"
               style={{ 
-                animationDelay: `${index * 100}ms`
+                animationDelay: `${index * 100}ms`,
+                backgroundColor: buttonColor,
+                color: textColor === '#FFFFFF' ? '#000000' : '#FFFFFF',
+                borderColor: buttonColor
               }}
             >
               <div className="flex items-center space-x-4">
@@ -207,42 +244,62 @@ const PublicPage = () => {
                 </div>
                 
                 <div className="flex-1 text-left">
-                  <p className={`font-semibold group-hover:text-purple-600 transition-colors ${theme.text}`}>
+                  <p className="font-semibold">
                     {link.title}
                   </p>
                   {link.click_count > 0 && (
-                    <p className={`text-xs ${theme.textMuted}`}>
+                    <p className="text-xs opacity-70">
                       {link.click_count} {link.click_count === 1 ? 'clique' : 'cliques'}
                     </p>
                   )}
                 </div>
                 
-                <ExternalLink className={`w-5 h-5 group-hover:text-purple-500 transition-colors ${theme.textMuted}`} />
+                <ExternalLink className="w-5 h-5 opacity-70" />
               </div>
             </button>
           ))}
         </div>
 
-        {/* Footer */}
-        <div className={`text-center py-6 border-t rounded-2xl ${theme.footer} border transition-all duration-300`}>
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-xs">L</span>
+        {/* Social Links Section */}
+        {socialLinks && socialLinks.length > 0 && (
+          <div className={`mb-8 ${theme.container} rounded-2xl p-6 border transition-all duration-300`}>
+            <div className="flex justify-center space-x-4">
+              {socialLinks.map((social) => (
+                <button
+                  key={social.id}
+                  onClick={() => handleSocialClick(social.url, social.platform)}
+                  className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 hover:scale-110 transform"
+                  title={social.platform}
+                >
+                  {getSocialIcon(social.platform)}
+                </button>
+              ))}
             </div>
-            <span className={`text-sm font-semibold ${theme.text}`}>LinkBio.AI</span>
           </div>
-          
-          <p className={`text-xs mb-3 ${theme.textMuted}`}>
-            Crie sua página personalizada gratuitamente
-          </p>
-          
-          <Button size="sm" variant="outline" asChild className={`text-xs ${theme.button}`}>
-            <a href="/">
-              Criar Minha Página
-              <ArrowRight className="w-3 h-3 ml-1" />
-            </a>
-          </Button>
-        </div>
+        )}
+
+        {/* Footer - Only show branding if not PRO */}
+        {profile.plan !== 'pro' && !profile.is_admin && (
+          <div className={`text-center py-6 border-t rounded-2xl ${theme.footer} border transition-all duration-300`}>
+            <div className="flex items-center justify-center space-x-2 mb-2">
+              <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
+                <span className="text-white font-bold text-xs">L</span>
+              </div>
+              <span className={`text-sm font-semibold ${theme.text}`}>LinkBio.AI</span>
+            </div>
+            
+            <p className={`text-xs mb-3 ${theme.textMuted}`}>
+              Crie sua página personalizada gratuitamente
+            </p>
+            
+            <Button size="sm" variant="outline" asChild className={`text-xs ${theme.button}`}>
+              <a href="/">
+                Criar Minha Página
+                <ArrowRight className="w-3 h-3 ml-1" />
+              </a>
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

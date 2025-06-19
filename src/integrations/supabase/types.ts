@@ -95,8 +95,10 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          button_color: string | null
           created_at: string | null
           id: string
+          is_admin: boolean | null
           is_founder: boolean | null
           is_verified: boolean | null
           name: string
@@ -105,6 +107,7 @@ export type Database = {
           role: string | null
           stripe_customer_id: string | null
           subscription_id: string | null
+          text_color: string | null
           theme: string | null
           updated_at: string | null
           username: string
@@ -112,8 +115,10 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          button_color?: string | null
           created_at?: string | null
           id: string
+          is_admin?: boolean | null
           is_founder?: boolean | null
           is_verified?: boolean | null
           name: string
@@ -122,6 +127,7 @@ export type Database = {
           role?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
+          text_color?: string | null
           theme?: string | null
           updated_at?: string | null
           username: string
@@ -129,8 +135,10 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          button_color?: string | null
           created_at?: string | null
           id?: string
+          is_admin?: boolean | null
           is_founder?: boolean | null
           is_verified?: boolean | null
           name?: string
@@ -139,11 +147,50 @@ export type Database = {
           role?: string | null
           stripe_customer_id?: string | null
           subscription_id?: string | null
+          text_color?: string | null
           theme?: string | null
           updated_at?: string | null
           username?: string
         }
         Relationships: []
+      }
+      social_links: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          position: number
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform: string
+          position?: number
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          position?: number
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -7,6 +7,7 @@ export interface PlanInfo {
   isPro: boolean;
   maxLinks: number;
   isFounder: boolean;
+  isAdmin: boolean;
   canUpgrade: boolean;
   founderCount: number;
   plan: string;
@@ -19,6 +20,7 @@ export const usePlan = () => {
     isPro: false,
     maxLinks: 5,
     isFounder: false,
+    isAdmin: false,
     canUpgrade: true,
     founderCount: 0,
     plan: 'free',
@@ -46,13 +48,15 @@ export const usePlan = () => {
           console.error('Error checking founder eligibility:', canBeFounderError);
         }
 
-        const isPro = profile.plan === 'pro';
+        const isPro = profile.plan === 'pro' || profile.is_admin === true;
         const isFounder = profile.is_founder || false;
+        const isAdmin = profile.is_admin || false;
 
         setPlanInfo({
           isPro,
           maxLinks: isPro ? Infinity : 5,
           isFounder,
+          isAdmin,
           canUpgrade: canBeFounder !== false && !isPro,
           founderCount: founderCount || 0,
           plan: profile.plan || 'free',
@@ -82,8 +86,8 @@ export const usePlan = () => {
 
       if (error) throw error;
       
-      // Open Stripe checkout in new tab
-      window.open(data.url, '_blank');
+      // Open Stripe checkout in current tab
+      window.location.href = data.url;
     } catch (error) {
       console.error('Error creating checkout session:', error);
       throw error;

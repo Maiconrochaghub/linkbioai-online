@@ -10,6 +10,8 @@ import { Camera, Loader2, Save } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAvatar } from "@/hooks/useAvatar";
 import { ThemeSelector } from "./ThemeSelector";
+import { SocialLinksEditor } from "./SocialLinksEditor";
+import { ColorCustomizer } from "./ColorCustomizer";
 
 export function ProfileEditor() {
   const { user, profile, updateProfile } = useAuth();
@@ -155,6 +157,25 @@ export function ProfileEditor() {
               {formData.bio.length}/200 caracteres
             </p>
           </div>
+
+          {/* Save Button */}
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Salvar Perfil
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
 
@@ -164,26 +185,11 @@ export function ProfileEditor() {
         onThemeChange={(theme) => handleInputChange('theme', theme)}
       />
 
-      {/* Botão Salvar */}
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Salvar Perfil
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Color Customizer */}
+      <ColorCustomizer />
+
+      {/* Social Links Editor */}
+      <SocialLinksEditor />
     </div>
   );
 }
