@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -20,21 +20,13 @@ export interface Link {
 export function useLinks() {
   const [links, setLinks] = useState<Link[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user && profile) {
-      fetchLinks();
-    } else {
-      setLoading(false);
-      setLinks([]);
-    }
-  }, [user, profile]);
-
-  const fetchLinks = async () => {
+  const fetchLinks = useCallback(async () => {
     if (!user) {
       setLoading(false);
+      setLinks([]);
       return;
     }
 
@@ -67,7 +59,11 @@ export function useLinks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, toast]);
+
+  useEffect(() => {
+    fetchLinks();
+  }, [fetchLinks]);
 
   const addLink = async (linkData: { title: string; url: string }) => {
     if (!user) {
@@ -82,7 +78,6 @@ export function useLinks() {
     try {
       console.log('➕ Adding link:', linkData.title);
       
-      // Get the highest position
       const maxPosition = links.length > 0 ? Math.max(...links.map(l => l.position)) : -1;
       
       const { data, error } = await supabase
@@ -191,7 +186,6 @@ export function useLinks() {
     try {
       console.log('🔄 Reordering links...');
       
-      // Update positions in database
       const updates = reorderedLinks.map((link, index) => ({
         id: link.id,
         position: index

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,7 +28,6 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  error: string | null;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -52,9 +51,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       console.log('🔄 Fetching profile for user:', userId);
       const { data, error } = await supabase
@@ -65,28 +64,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('❌ Error fetching profile:', error);
-        throw error;
+        setProfile(null);
+        return;
       }
       
       console.log('✅ Profile fetched successfully:', data?.username);
       setProfile(data);
-      setError(null);
     } catch (err) {
       console.error('❌ Error fetching profile:', err);
-      setError('Erro ao carregar perfil');
       setProfile(null);
     }
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.id);
     }
-  };
+  }, [user, fetchProfile]);
 
   const signIn = async (email: string, password: string) => {
     try {
-      setLoading(true);
       console.log('🔐 Attempting sign in for:', email);
       
       const { error } = await supabase.auth.signInWithPassword({
@@ -104,14 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('❌ Unexpected sign in error:', err);
       return { error: err instanceof Error ? err.message : 'Erro desconhecido' };
-    } finally {
-      setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      setLoading(true);
       console.log('📝 Attempting sign up for:', email);
       
       const { error } = await supabase.auth.signUp({
@@ -119,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: {
           data: { name: name },
-          emailRedirectTo: window.location.origin
+          emailRedirectTo: `${window.location.origin}/verification`
         }
       });
       
@@ -133,8 +127,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('❌ Unexpected sign up error:', err);
       return { error: err instanceof Error ? err.message : 'Erro desconhecido' };
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -159,7 +151,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
 
-      // Update local profile state
       setProfile(prev => prev ? { ...prev, ...updates } : null);
       console.log('✅ Profile updated successfully');
       
@@ -178,35 +169,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setUser(null);
       setProfile(null);
-      setError(null);
       console.log('✅ Sign out successful');
     } catch (err) {
       console.error('❌ Sign out error:', err);
-      setError(err instanceof Error ? err.message : 'Error signing out');
     }
   };
 
-  const isMasterAdmin = () => {
+  const isMasterAdmin = useCallback(() => {
     return profile?.role === 'master_admin' || profile?.is_admin === true;
-  };
+  }, [profile]);
 
-  const isMaiconRocha = () => {
+  const isMaiconRocha = useCallback(() => {
     return user?.email === 'maicon@thiagomatos.com.br' || user?.email === 'maiconrochadsb@gmail.com';
-  };
+  }, [user]);
 
   useEffect(() => {
+    if (initialized) return;
+    
+    console.log('🚀 AuthProvider initializing...');
+    
     let mounted = true;
-    
-    console.log('🚀 AuthProvider initialized');
-    
-    // Get initial session
-    const getInitialSession = async () => {
+
+    const initializeAuth = async () => {
       try {
+        // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('❌ Error getting session:', error);
-          setError('Erro ao verificar sessão');
         } else if (session?.user && mounted) {
           console.log('✅ Initial session found:', session.user.email);
           setUser(session.user);
@@ -216,10 +206,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (err) {
         console.error('❌ Unexpected session error:', err);
-        setError('Erro inesperado ao verificar sessão');
       } finally {
         if (mounted) {
           setLoading(false);
+          setInitialized(true);
         }
       }
     };
@@ -230,38 +220,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       console.log('🔄 Auth state changed:', event, session?.user?.email || 'no user');
       
-      try {
-        if (session?.user) {
-          setUser(session.user);
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            await fetchProfile(session.user.id);
-          }
-        } else {
-          setUser(null);
-          setProfile(null);
-          setError(null);
+      if (session?.user) {
+        setUser(session.user);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          // Use setTimeout to prevent blocking the auth state change
+          setTimeout(() => {
+            if (mounted) {
+              fetchProfile(session.user.id);
+            }
+          }, 0);
         }
-      } catch (err) {
-        console.error('❌ Error in auth state change:', err);
-        setError('Erro ao processar mudança de autenticação');
-      } finally {
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      
+      if (mounted) {
         setLoading(false);
       }
     });
 
-    getInitialSession();
+    initializeAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [initialized, fetchProfile]);
 
   const value = {
     user,
     profile,
     loading,
-    error,
     signIn,
     signUp,
     signOut,
