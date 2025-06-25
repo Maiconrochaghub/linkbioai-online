@@ -36,18 +36,18 @@ const getIcon = (iconName: string) => {
 
 const getSocialIcon = (platform: string) => {
   const iconMap = {
-    instagram: <Instagram className="w-4 h-4 text-pink-500" />,
-    youtube: <Youtube className="w-4 h-4 text-red-500" />,
-    twitter: <Twitter className="w-4 h-4 text-blue-400" />,
-    linkedin: <Linkedin className="w-4 h-4 text-blue-600" />,
-    github: <Github className="w-4 h-4 text-gray-700" />,
-    whatsapp: <Phone className="w-4 h-4 text-green-500" />,
-    email: <Mail className="w-4 h-4 text-gray-600" />,
-    website: <Globe className="w-4 h-4 text-blue-500" />,
-    tiktok: <Music className="w-4 h-4 text-black" />,
-    facebook: <Globe className="w-4 h-4 text-blue-600" />,
+    instagram: <Instagram className="w-5 h-5 text-pink-500" />,
+    youtube: <Youtube className="w-5 h-5 text-red-500" />,
+    twitter: <Twitter className="w-5 h-5 text-blue-400" />,
+    linkedin: <Linkedin className="w-5 h-5 text-blue-600" />,
+    github: <Github className="w-5 h-5 text-gray-700" />,
+    whatsapp: <Phone className="w-5 h-5 text-green-500" />,
+    email: <Mail className="w-5 h-5 text-gray-600" />,
+    website: <Globe className="w-5 h-5 text-blue-500" />,
+    tiktok: <Music className="w-5 h-5 text-black" />,
+    facebook: <Globe className="w-5 h-5 text-blue-600" />,
   };
-  return iconMap[platform as keyof typeof iconMap] || <Globe className="w-4 h-4 text-gray-500" />;
+  return iconMap[platform as keyof typeof iconMap] || <Globe className="w-5 h-5 text-gray-500" />;
 };
 
 const getThemeClasses = (theme: string) => {
@@ -255,15 +255,15 @@ const PublicPage = () => {
           ))}
         </div>
 
-        {/* Social Links Section - Otimizada */}
+        {/* Social Links Section - Updated */}
         {socialLinks && socialLinks.length > 0 && (
-          <div className={`mb-8 ${theme.container} rounded-2xl p-4 border transition-all duration-300`}>
-            <div className="flex justify-center flex-wrap gap-2">
+          <div className="mb-8 flex justify-center">
+            <div className="flex justify-center flex-wrap gap-4">
               {socialLinks.map((social) => (
                 <button
                   key={social.id}
                   onClick={() => handleSocialClick(social.url, social.platform)}
-                  className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200 hover:scale-110 transform border border-gray-200"
+                  className="transition-transform duration-200 hover:scale-110 transform"
                   title={social.platform}
                 >
                   {getSocialIcon(social.platform)}
