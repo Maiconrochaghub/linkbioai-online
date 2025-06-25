@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -21,22 +20,6 @@ import { usePublicPage } from "@/hooks/usePublicPage";
 
 const getIcon = (iconName: string) => {
   const iconMap = {
-    instagram: <Instagram className="w-6 h-6 text-pink-500" />,
-    youtube: <Youtube className="w-6 h-6 text-red-500" />,
-    twitter: <Twitter className="w-6 h-6 text-blue-400" />,
-    linkedin: <Linkedin className="w-6 h-6 text-blue-600" />,
-    github: <Github className="w-6 h-6 text-gray-700" />,
-    whatsapp: <Phone className="w-6 h-6 text-green-500" />,
-    email: <Mail className="w-6 h-6 text-gray-600" />,
-    website: <Globe className="w-6 h-6 text-blue-500" />,
-    tiktok: <Music className="w-6 h-6 text-black" />,
-    facebook: <Globe className="w-6 h-6 text-blue-600" />,
-  };
-  return iconMap[iconName as keyof typeof iconMap] || <Globe className="w-6 h-6 text-gray-500" />;
-};
-
-const getSocialIcon = (platform: string) => {
-  const iconMap = {
     instagram: <Instagram className="w-5 h-5 text-pink-500" />,
     youtube: <Youtube className="w-5 h-5 text-red-500" />,
     twitter: <Twitter className="w-5 h-5 text-blue-400" />,
@@ -48,7 +31,23 @@ const getSocialIcon = (platform: string) => {
     tiktok: <Music className="w-5 h-5 text-black" />,
     facebook: <Globe className="w-5 h-5 text-blue-600" />,
   };
-  return iconMap[platform as keyof typeof iconMap] || <Globe className="w-5 h-5 text-gray-500" />;
+  return iconMap[iconName as keyof typeof iconMap] || <Globe className="w-5 h-5 text-gray-500" />;
+};
+
+const getSocialIcon = (platform: string) => {
+  const iconMap = {
+    instagram: <Instagram className="w-4 h-4 text-pink-500" />,
+    youtube: <Youtube className="w-4 h-4 text-red-500" />,
+    twitter: <Twitter className="w-4 h-4 text-blue-400" />,
+    linkedin: <Linkedin className="w-4 h-4 text-blue-600" />,
+    github: <Github className="w-4 h-4 text-gray-700" />,
+    whatsapp: <Phone className="w-4 h-4 text-green-500" />,
+    email: <Mail className="w-4 h-4 text-gray-600" />,
+    website: <Globe className="w-4 h-4 text-blue-500" />,
+    tiktok: <Music className="w-4 h-4 text-black" />,
+    facebook: <Globe className="w-4 h-4 text-blue-600" />,
+  };
+  return iconMap[platform as keyof typeof iconMap] || <Globe className="w-4 h-4 text-gray-500" />;
 };
 
 const getThemeClasses = (theme: string) => {
@@ -104,16 +103,13 @@ const PublicPage = () => {
   const { toast } = useToast();
 
   const handleLinkClick = async (link: any) => {
-    // Track click analytics
     await trackClick(link.id);
     
-    // Show feedback
     toast({
       title: "Redirecionando...",
       description: `Abrindo ${link.title}`,
     });
     
-    // Open link in new tab
     window.open(link.url, '_blank', 'noopener,noreferrer');
   };
 
@@ -167,7 +163,6 @@ const PublicPage = () => {
   const { profile, links, socialLinks } = data;
   const theme = getThemeClasses(profile.theme || 'default');
   
-  // Use custom colors if available
   const buttonColor = profile.button_color || '#8B5CF6';
   const textColor = profile.text_color || '#1F2937';
 
@@ -254,21 +249,21 @@ const PublicPage = () => {
                   )}
                 </div>
                 
-                <ExternalLink className="w-5 h-5 opacity-70" />
+                <ExternalLink className="w-4 h-4 opacity-70" />
               </div>
             </button>
           ))}
         </div>
 
-        {/* Social Links Section */}
+        {/* Social Links Section - Otimizada */}
         {socialLinks && socialLinks.length > 0 && (
-          <div className={`mb-8 ${theme.container} rounded-2xl p-6 border transition-all duration-300`}>
-            <div className="flex justify-center space-x-4">
+          <div className={`mb-8 ${theme.container} rounded-2xl p-4 border transition-all duration-300`}>
+            <div className="flex justify-center flex-wrap gap-2">
               {socialLinks.map((social) => (
                 <button
                   key={social.id}
                   onClick={() => handleSocialClick(social.url, social.platform)}
-                  className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 hover:scale-110 transform"
+                  className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200 hover:scale-110 transform border border-gray-200"
                   title={social.platform}
                 >
                   {getSocialIcon(social.platform)}

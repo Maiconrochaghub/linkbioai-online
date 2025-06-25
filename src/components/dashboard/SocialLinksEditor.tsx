@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,16 +9,16 @@ import { Trash2, Plus, Instagram, Youtube, Linkedin, Twitter, Github, Phone, Mai
 import { useSocialLinks } from "@/hooks/useSocialLinks";
 
 const platformIcons = {
-  instagram: <Instagram className="w-4 h-4" />,
-  youtube: <Youtube className="w-4 h-4" />,
-  linkedin: <Linkedin className="w-4 h-4" />,
-  twitter: <Twitter className="w-4 h-4" />,
-  github: <Github className="w-4 h-4" />,
-  whatsapp: <Phone className="w-4 h-4" />,
-  email: <Mail className="w-4 h-4" />,
-  website: <Globe className="w-4 h-4" />,
-  tiktok: <Music className="w-4 h-4" />,
-  facebook: <Globe className="w-4 h-4" />
+  instagram: <Instagram className="w-4 h-4 text-pink-500" />,
+  youtube: <Youtube className="w-4 h-4 text-red-500" />,
+  linkedin: <Linkedin className="w-4 h-4 text-blue-600" />,
+  twitter: <Twitter className="w-4 h-4 text-blue-400" />,
+  github: <Github className="w-4 h-4 text-gray-700" />,
+  whatsapp: <Phone className="w-4 h-4 text-green-500" />,
+  email: <Mail className="w-4 h-4 text-gray-600" />,
+  website: <Globe className="w-4 h-4 text-blue-500" />,
+  tiktok: <Music className="w-4 h-4 text-black" />,
+  facebook: <Globe className="w-4 h-4 text-blue-600" />
 };
 
 const platformLabels = {
@@ -66,24 +67,26 @@ export function SocialLinksEditor() {
       <CardHeader>
         <CardTitle>Redes Sociais</CardTitle>
         <CardDescription>
-          Adicione suas redes sociais para exibir na sua página pública
+          Adicione suas redes sociais para exibir como ícones pequenos na sua página
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Existing Social Links */}
         <div className="space-y-3">
           {socialLinks.map((link) => (
-            <div key={link.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div key={link.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
               <div className="flex items-center gap-2 flex-1">
-                {platformIcons[link.platform as keyof typeof platformIcons]}
-                <span className="font-medium">{platformLabels[link.platform as keyof typeof platformLabels]}</span>
-                <span className="text-sm text-gray-500 truncate">{link.url}</span>
+                <div className="p-1 bg-white rounded border">
+                  {platformIcons[link.platform as keyof typeof platformIcons]}
+                </div>
+                <span className="font-medium text-sm">{platformLabels[link.platform as keyof typeof platformLabels]}</span>
+                <span className="text-xs text-gray-500 truncate flex-1">{link.url}</span>
               </div>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => removeSocialLink(link.id)}
-                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -91,9 +94,11 @@ export function SocialLinksEditor() {
           ))}
           
           {socialLinks.length === 0 && (
-            <p className="text-gray-500 text-center py-4">
-              Nenhuma rede social adicionada ainda
-            </p>
+            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed">
+              <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Nenhuma rede social adicionada</p>
+              <p className="text-xs">Os ícones aparecerão como botões pequenos na sua página</p>
+            </div>
           )}
         </div>
 
@@ -148,6 +153,10 @@ export function SocialLinksEditor() {
               </>
             )}
           </Button>
+          
+          <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
+            💡 <strong>Dica:</strong> Os ícones das redes sociais aparecerão como botões pequenos e elegantes na sua página pública, logo abaixo dos seus links principais.
+          </div>
         </div>
       </CardContent>
     </Card>
