@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +17,7 @@ export const usePlan = () => {
   const { user, profile } = useAuth();
   const [planInfo, setPlanInfo] = useState<PlanInfo>({
     isPro: false,
-    maxLinks: 5,
+    maxLinks: 10, // Updated from 5 to 10
     isFounder: false,
     isAdmin: false,
     canUpgrade: true,
@@ -54,7 +53,7 @@ export const usePlan = () => {
 
         setPlanInfo({
           isPro,
-          maxLinks: isPro ? Infinity : 5,
+          maxLinks: isPro ? Infinity : 10, // Updated from 5 to 10
           isFounder,
           isAdmin,
           canUpgrade: canBeFounder !== false && !isPro,

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -168,11 +167,11 @@ const UpgradePage = () => {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span>Até 5 links ativos</span>
+                    <span>Até 10 links ativos</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
-                    <span>1 tema (Padrão)</span>
+                    <span>Todos os 4 temas disponíveis</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
@@ -185,6 +184,10 @@ const UpgradePage = () => {
                   <div className="flex items-center space-x-3">
                     <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
                     <span>QR Code</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    <span>Redes sociais ilimitadas</span>
                   </div>
                 </div>
               </CardContent>
@@ -225,7 +228,7 @@ const UpgradePage = () => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <Palette className="w-5 h-5 text-purple-500 flex-shrink-0" />
-                    <span className="font-medium">Todos os temas</span>
+                    <span className="font-medium">Todos os temas + futuros</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <BarChart3 className="w-5 h-5 text-purple-500 flex-shrink-0" />

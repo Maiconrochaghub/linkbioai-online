@@ -30,11 +30,11 @@ export function PricingSection() {
             <div className="space-y-4 mb-8">
               <div className="flex items-center">
                 <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                <span>Até 5 links ativos</span>
+                <span>Até 10 links ativos</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                <span>1 tema padrão</span>
+                <span>Todos os 4 temas disponíveis</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
@@ -43,6 +43,10 @@ export function PricingSection() {
               <div className="flex items-center">
                 <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
                 <span>Analytics básico</span>
+              </div>
+              <div className="flex items-center">
+                <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                <span>Redes sociais ilimitadas</span>
               </div>
               <div className="flex items-center">
                 <Check className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
@@ -85,7 +89,7 @@ export function PricingSection() {
               </div>
               <div className="flex items-center">
                 <Star className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                <span className="font-medium">5 temas exclusivos</span>
+                <span className="font-medium">Todos os temas + futuros</span>
               </div>
               <div className="flex items-center">
                 <Star className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
