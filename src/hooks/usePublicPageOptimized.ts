@@ -74,38 +74,41 @@ export function usePublicPageOptimized(username: string) {
       console.log(`🔄 Tentativa ${attempt + 1} de carregar página pública para: ${username}`);
       
       // Fetch profile with timeout
-      const profilePromise = supabase
-        .from('profiles')
-        .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
-        .eq('username', username)
-        .single();
+      const profileResponse = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
+          .eq('username', username)
+          .single(),
+        TIMEOUT_MS
+      );
 
-      const { data: profile, error: profileError } = await withTimeout(profilePromise, TIMEOUT_MS);
-
-      if (profileError) {
-        console.error('❌ Erro ao buscar perfil:', profileError);
+      if (profileResponse.error) {
+        console.error('❌ Erro ao buscar perfil:', profileResponse.error);
         throw new Error('Usuário não encontrado');
       }
 
+      const profile = profileResponse.data;
       console.log('✅ Perfil encontrado:', profile.name);
 
       // Fetch links with timeout
-      const linksPromise = supabase
-        .from('links')
-        .select('id, title, url, icon, position, click_count')
-        .eq('user_id', profile.id)
-        .eq('is_active', true)
-        .order('position', { ascending: true });
+      const linksResponse = await withTimeout(
+        supabase
+          .from('links')
+          .select('id, title, url, icon, position, click_count')
+          .eq('user_id', profile.id)
+          .eq('is_active', true)
+          .order('position', { ascending: true }),
+        TIMEOUT_MS
+      );
 
-      const { data: rawLinks, error: linksError } = await withTimeout(linksPromise, TIMEOUT_MS);
-
-      if (linksError) {
-        console.error('❌ Erro ao buscar links:', linksError);
+      if (linksResponse.error) {
+        console.error('❌ Erro ao buscar links:', linksResponse.error);
         throw new Error('Erro ao carregar links');
       }
 
       // Clean and validate URLs
-      const links = (rawLinks || []).map(link => ({
+      const links = (linksResponse.data || []).map(link => ({
         ...link,
         url: cleanUrl(link.url)
       }));
@@ -115,14 +118,16 @@ export function usePublicPageOptimized(username: string) {
       // Fetch social links with timeout (non-critical)
       let socialLinks: PublicSocialLink[] = [];
       try {
-        const socialPromise = supabase
-          .from('social_links')
-          .select('id, platform, url, position')
-          .eq('user_id', profile.id)
-          .order('position', { ascending: true });
+        const socialResponse = await withTimeout(
+          supabase
+            .from('social_links')
+            .select('id, platform, url, position')
+            .eq('user_id', profile.id)
+            .order('position', { ascending: true }),
+          TIMEOUT_MS / 2
+        );
 
-        const { data: socialData } = await withTimeout(socialPromise, TIMEOUT_MS / 2);
-        socialLinks = socialData || [];
+        socialLinks = socialResponse.data || [];
         console.log('✅ Links sociais carregados:', socialLinks.length);
       } catch (socialError) {
         console.warn('⚠️ Falha ao carregar links sociais (não crítico):', socialError);
@@ -189,14 +194,14 @@ export function usePublicPageOptimized(username: string) {
       });
 
       // Update click count
-      const { data: linkData } = await supabase
+      const linkResponse = await supabase
         .from('links')
         .select('click_count')
         .eq('id', linkId)
         .single();
 
-      if (linkData) {
-        const newClickCount = (linkData.click_count || 0) + 1;
+      if (linkResponse.data) {
+        const newClickCount = (linkResponse.data.click_count || 0) + 1;
         
         await supabase
           .from('links')
@@ -217,7 +222,7 @@ export function usePublicPageOptimized(username: string) {
       }
 
       // Don't await tracking to avoid blocking user
-      trackingPromise.catch(error => 
+      trackingPromise.then().catch(error => 
         console.warn('⚠️ Falha no tracking (não crítico):', error)
       );
 
