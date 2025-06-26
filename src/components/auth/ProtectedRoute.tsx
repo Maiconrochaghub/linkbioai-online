@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContextOptimized';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,6 +13,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log('🚪 ProtectedRoute: Redirecting to login - no user');
       navigate('/login', { replace: true });
     }
   }, [user, loading, navigate]);
@@ -26,6 +27,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
             <span className="text-white font-bold">L</span>
           </div>
           <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-gray-600 mt-2">Verificando acesso...</p>
         </div>
       </div>
     );

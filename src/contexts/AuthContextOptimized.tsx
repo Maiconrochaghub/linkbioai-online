@@ -52,30 +52,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
   
-  // Refs para evitar loops infinitos
-  const fetchingProfile = useRef(false);
-  const lastProfileFetch = useRef<string | null>(null);
+  // Refs para controle de estado e evitar loops
+  const mountedRef = useRef(true);
+  const fetchingProfileRef = useRef(false);
+  const profileCacheRef = useRef<{ [key: string]: Profile }>({});
+  const initializingRef = useRef(false);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Cache de perfil para evitar re-fetches desnecessários
-  const fetchProfile = useCallback(async (userId: string, force = false) => {
-    // Evitar fetch duplo
-    if (fetchingProfile.current && !force) {
-      console.log('⏭️ Profile fetch already in progress');
-      return profile;
-    }
-    
-    // Evitar fetch se já foi feito para este user recentemente
-    if (lastProfileFetch.current === userId && !force && profile) {
-      console.log('⏭️ Profile already fetched for user:', userId);
-      return profile;
+  // Função de fetch de perfil otimizada
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    if (!mountedRef.current || fetchingProfileRef.current) {
+      return null;
     }
 
-    fetchingProfile.current = true;
+    // Verificar cache primeiro
+    if (profileCacheRef.current[userId]) {
+      console.log('✅ Using cached profile for:', userId);
+      setProfile(profileCacheRef.current[userId]);
+      return profileCacheRef.current[userId];
+    }
+
+    fetchingProfileRef.current = true;
     
     try {
       console.log('🔄 Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -87,23 +89,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
       
-      console.log('✅ Profile fetched successfully:', data?.username);
-      lastProfileFetch.current = userId;
-      setProfile(data);
-      return data;
+      if (data && mountedRef.current) {
+        console.log('✅ Profile fetched successfully:', data.username);
+        profileCacheRef.current[userId] = data;
+        setProfile(data);
+        return data;
+      }
+      
+      return null;
     } catch (err) {
-      console.error('❌ Error fetching profile:', err);
+      console.error('❌ Unexpected error fetching profile:', err);
       return null;
     } finally {
-      fetchingProfile.current = false;
+      fetchingProfileRef.current = false;
     }
-  }, [profile]);
+  }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (user) {
-      await fetchProfile(user.id, true);
+    if (user?.id) {
+      // Limpar cache para forçar refresh
+      delete profileCacheRef.current[user.id];
+      await fetchProfile(user.id);
     }
-  }, [user, fetchProfile]);
+  }, [user?.id, fetchProfile]);
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -174,9 +182,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
 
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
-      console.log('✅ Profile updated successfully');
+      // Atualizar cache e estado local
+      const updatedProfile = profile ? { ...profile, ...updates } : null;
+      if (updatedProfile) {
+        profileCacheRef.current[user.id] = updatedProfile;
+        setProfile(updatedProfile);
+      }
       
+      console.log('✅ Profile updated successfully');
       return { error: null };
     } catch (err) {
       console.error('❌ Unexpected profile update error:', err);
@@ -190,11 +203,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Limpar estado
+      // Limpar todo o estado
       setUser(null);
       setSession(null);
       setProfile(null);
-      lastProfileFetch.current = null;
+      profileCacheRef.current = {};
       
       console.log('✅ Sign out successful');
     } catch (err) {
@@ -210,87 +223,104 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user?.email === 'maicon@thiagomatos.com.br' || user?.email === 'maiconrochadsb@gmail.com';
   }, [user]);
 
+  // Inicialização principal do contexto
   useEffect(() => {
-    console.log('🚀 AuthProvider initializing...');
+    if (initializingRef.current) return;
     
-    let mounted = true;
+    initializingRef.current = true;
+    console.log('🚀 AuthProvider initializing...');
+
+    // Timeout de segurança para evitar loading infinito
+    loadingTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current && loading) {
+        console.warn('⚠️ Loading timeout reached, forcing completion');
+        setLoading(false);
+      }
+    }, 10000); // 10 segundos
 
     const initializeAuth = async () => {
       try {
-        // Configurar listener otimizado
+        // Primeiro: configurar listener para mudanças de auth
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-          if (!mounted) return;
+          if (!mountedRef.current) return;
           
-          console.log('🔄 Auth state changed:', event);
+          console.log('🔄 Auth state changed:', event, newSession?.user?.id || 'no user');
           
+          // Atualizar estados básicos imediatamente
           setSession(newSession);
+          setUser(newSession?.user || null);
           
-          if (newSession?.user) {
-            setUser(newSession.user);
-            
-            // Só buscar perfil em eventos específicos e se não estiver já buscando
-            if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && !fetchingProfile.current) {
-              // Usar setTimeout para evitar bloquear o callback
-              setTimeout(() => {
-                if (mounted) {
-                  fetchProfile(newSession.user.id);
-                }
-              }, 0);
-            }
-          } else {
-            setUser(null);
+          // Buscar perfil apenas para eventos específicos
+          if (newSession?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+            // Usar setTimeout para não bloquear o callback
+            setTimeout(() => {
+              if (mountedRef.current) {
+                fetchProfile(newSession.user.id);
+              }
+            }, 100);
+          } else if (!newSession?.user) {
+            // Limpar perfil se não há usuário
             setProfile(null);
-            lastProfileFetch.current = null;
+            profileCacheRef.current = {};
           }
           
-          if (mounted) {
+          // Completar loading se ainda estiver carregando
+          if (mountedRef.current && loading) {
             setLoading(false);
-            setInitialized(true);
           }
         });
 
-        // Verificar sessão existente
+        // Segundo: verificar sessão existente
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        if (currentSession?.user && mounted) {
-          console.log('✅ Initial session found');
-          setSession(currentSession);
-          setUser(currentSession.user);
+        if (mountedRef.current) {
+          if (currentSession?.user) {
+            console.log('✅ Initial session found for:', currentSession.user.email);
+            setSession(currentSession);
+            setUser(currentSession.user);
+            
+            // Buscar perfil para sessão inicial
+            setTimeout(() => {
+              if (mountedRef.current) {
+                fetchProfile(currentSession.user.id);
+              }
+            }, 100);
+          } else {
+            console.log('ℹ️ No initial session found');
+          }
           
-          // Buscar perfil para sessão inicial
-          setTimeout(() => {
-            if (mounted) {
-              fetchProfile(currentSession.user.id);
-            }
-          }, 0);
-        }
-
-        if (mounted) {
+          // Sempre completar loading após verificar sessão
           setLoading(false);
-          setInitialized(true);
         }
 
+        // Cleanup function
         return () => {
           subscription.unsubscribe();
         };
       } catch (err) {
-        console.error('❌ Unexpected session error:', err);
-        if (mounted) {
+        console.error('❌ Auth initialization error:', err);
+        if (mountedRef.current) {
           setLoading(false);
-          setInitialized(true);
         }
       }
     };
 
-    initializeAuth();
+    const cleanup = initializeAuth();
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
+      initializingRef.current = false;
+      
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      
+      cleanup?.then(cleanupFn => cleanupFn?.());
     };
-  }, [fetchProfile]);
+  }, []); // Array de dependência vazio para executar apenas uma vez
 
-  // Loading simplificado
-  if (!initialized) {
+  // Loading screen simplificado - sem gradients complexos para melhor performance
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -298,6 +328,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             <span className="text-white font-bold">L</span>
           </div>
           <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-gray-600">Carregando...</p>
         </div>
       </div>
     );

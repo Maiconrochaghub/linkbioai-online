@@ -20,7 +20,7 @@ import {
   User,
   Crown
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContextOptimized";
 import { useLinks } from "@/hooks/useLinks";
 import { usePlan } from "@/hooks/usePlan";
 import { useSlowConnection } from "@/hooks/useSlowConnection";
@@ -95,13 +95,52 @@ export function DashboardOptimized() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab] = useState('links');
 
-  // Loading state
-  if (loading || !user || !profile) {
+  // Loading state melhorado
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-16 h-16 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 text-lg font-medium">Carregando seu painel...</p>
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto">
+            <span className="text-white font-bold text-xl">L</span>
+          </div>
+          <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto" />
+          <div className="space-y-2">
+            <p className="text-gray-600 text-lg font-medium">Carregando seu painel...</p>
+            <p className="text-gray-500 text-sm">Aguarde um momento</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Verificação de estado melhorada
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-red-100 rounded-lg flex items-center justify-center mx-auto">
+            <span className="text-red-600 font-bold text-xl">!</span>
+          </div>
+          <div className="space-y-2">
+            <p className="text-gray-600 text-lg font-medium">Acesso não autorizado</p>
+            <p className="text-gray-500 text-sm">Redirecionando para login...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto">
+            <User className="w-8 h-8 text-yellow-600" />
+          </div>
+          <div className="space-y-2">
+            <p className="text-gray-600 text-lg font-medium">Carregando perfil...</p>
+            <Loader2 className="w-6 h-6 text-yellow-600 animate-spin mx-auto" />
+          </div>
         </div>
       </div>
     );
