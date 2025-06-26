@@ -19,17 +19,10 @@ import {
   Plus
 } from "lucide-react";
 
-interface Link {
-  title: string;
-  url: string;
-  icon: string;
-  is_active: boolean;
-}
-
 interface AddLinkModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (link: Link) => void;
+  onAdd: (link: { title: string; url: string; is_active: boolean }) => Promise<void>;
 }
 
 const detectIcon = (url: string): string => {
@@ -37,7 +30,7 @@ const detectIcon = (url: string): string => {
     const domain = new URL(url).hostname.toLowerCase();
     
     if (domain.includes('instagram.com')) return 'instagram';
-    if (domain.includes('youtube.com')) return 'youtube';
+    if (domain.includes('youtube.com') || domain.includes('youtu.be')) return 'youtube';
     if (domain.includes('twitter.com') || domain.includes('x.com')) return 'twitter';
     if (domain.includes('linkedin.com')) return 'linkedin';
     if (domain.includes('github.com')) return 'github';
@@ -55,7 +48,7 @@ const getIconDisplay = (iconName: string) => {
   const iconMap = {
     instagram: { icon: <Instagram className="w-6 h-6 text-pink-500" />, name: "Instagram" },
     youtube: { icon: <Youtube className="w-6 h-6 text-red-500" />, name: "YouTube" },
-    twitter: { icon: <Twitter className="w-6 h-6 text-blue-400" />, name: "Twitter" },
+    twitter: { icon: <Twitter className="w-6 h-6 text-blue-400" />, name: "Twitter/X" },
     linkedin: { icon: <Linkedin className="w-6 h-6 text-blue-600" />, name: "LinkedIn" },
     github: { icon: <Github className="w-6 h-6 text-gray-700" />, name: "GitHub" },
     whatsapp: { icon: <Phone className="w-6 h-6 text-green-500" />, name: "WhatsApp" },
@@ -92,11 +85,23 @@ export function AddLinkModal({ open, onOpenChange, onAdd }: AddLinkModalProps) {
     }
     
     try {
-      new URL(url);
-      return true;
+      const urlObj = new URL(url);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
     } catch {
       return false;
     }
+  };
+
+  const normalizeUrl = (url: string): string => {
+    if (url.startsWith('mailto:') || url.startsWith('tel:')) {
+      return url;
+    }
+    
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return `https://${url}`;
+    }
+    
+    return url;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,10 +125,12 @@ export function AddLinkModal({ open, onOpenChange, onAdd }: AddLinkModalProps) {
       return;
     }
 
-    if (!validateUrl(formData.url)) {
+    const normalizedUrl = normalizeUrl(formData.url.trim());
+    
+    if (!validateUrl(normalizedUrl)) {
       toast({
         title: "URL inválida",
-        description: "Por favor, insira uma URL válida.",
+        description: "Por favor, insira uma URL válida (ex: https://exemplo.com).",
         variant: "destructive"
       });
       return;
@@ -131,28 +138,34 @@ export function AddLinkModal({ open, onOpenChange, onAdd }: AddLinkModalProps) {
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const newLink: Link = {
-        title: formData.title.trim(),
-        url: formData.url.trim(),
-        icon: detectedIcon,
-        is_active: true
-      };
+    try {
+      console.log('🔗 Adicionando novo link:', { title: formData.title, url: normalizedUrl });
       
-      onAdd(newLink);
+      await onAdd({
+        title: formData.title.trim(),
+        url: normalizedUrl,
+        is_active: true
+      });
       
       toast({
         title: "Link adicionado! 🎉",
-        description: `"${newLink.title}" foi adicionado à sua página.`,
+        description: `"${formData.title}" foi adicionado à sua página.`,
       });
       
       // Reset form
       setFormData({ title: "", url: "" });
       setDetectedIcon("website");
-      setIsLoading(false);
       onOpenChange(false);
-    }, 1000);
+    } catch (error: any) {
+      console.error('❌ Erro ao adicionar link:', error);
+      toast({
+        title: "Erro ao adicionar link",
+        description: error?.message || "Tente novamente em alguns instantes.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const iconDisplay = getIconDisplay(detectedIcon);
@@ -186,6 +199,7 @@ export function AddLinkModal({ open, onOpenChange, onAdd }: AddLinkModalProps) {
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 className="pl-10 h-11"
                 maxLength={50}
+                disabled={isLoading}
               />
             </div>
             <p className="text-xs text-gray-500">
@@ -202,13 +216,17 @@ export function AddLinkModal({ open, onOpenChange, onAdd }: AddLinkModalProps) {
               <LinkIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 id="url"
-                type="url"
-                placeholder="https://instagram.com/usuario"
+                type="text"
+                placeholder="instagram.com/usuario ou https://exemplo.com"
                 value={formData.url}
                 onChange={(e) => handleUrlChange(e.target.value)}
                 className="pl-10 h-11"
+                disabled={isLoading}
               />
             </div>
+            <p className="text-xs text-gray-500">
+              Adicione http:// ou https:// se necessário (será adicionado automaticamente)
+            </p>
           </div>
 
           {/* Icon Preview */}
@@ -238,13 +256,14 @@ export function AddLinkModal({ open, onOpenChange, onAdd }: AddLinkModalProps) {
               variant="outline" 
               onClick={() => onOpenChange(false)}
               className="flex-1"
+              disabled={isLoading}
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
               className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
-              disabled={isLoading}
+              disabled={isLoading || !formData.title.trim() || !formData.url.trim()}
             >
               {isLoading ? (
                 <>

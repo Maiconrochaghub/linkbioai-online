@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,10 +62,16 @@ export function Dashboard() {
       return;
     }
     
-    await addLink({
-      title: newLink.title,
-      url: newLink.url
-    });
+    try {
+      console.log('🔗 Dashboard: Adicionando link via useLinks:', newLink);
+      await addLink({
+        title: newLink.title,
+        url: newLink.url
+      });
+    } catch (error) {
+      console.error('❌ Dashboard: Erro ao adicionar link:', error);
+      throw error; // Re-throw para que o modal possa tratar
+    }
   };
 
   const handleManageSubscription = async () => {
@@ -339,7 +344,11 @@ export function Dashboard() {
                         </div>
                         <h3 className="text-lg font-medium mb-2">Nenhum link ainda</h3>
                         <p className="text-gray-600 mb-4">Comece adicionando seu primeiro link</p>
-                        <Button onClick={() => setShowAddModal(true)} variant="outline">
+                        <Button 
+                          onClick={() => setShowAddModal(true)} 
+                          variant="outline"
+                          disabled={!isPro && activeLinks >= maxLinks}
+                        >
                           Adicionar Primeiro Link
                         </Button>
                       </div>
