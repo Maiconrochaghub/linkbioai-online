@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +19,7 @@ import {
   WifiOff
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { usePublicPageOptimized } from "@/hooks/usePublicPageOptimized";
+import { usePublicPage } from "@/hooks/usePublicPage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 
@@ -225,7 +224,7 @@ const ErrorScreen = ({ error, retry, retryCount, username }: {
 
 const PublicPageOptimized = () => {
   const { username } = useParams<{ username: string }>();
-  const { data, loading, error, retryCount, trackClick, retry } = usePublicPageOptimized(username || '');
+  const { data, loading, error, retryCount, trackClick, retry } = usePublicPage(username || '');
   const { toast } = useToast();
 
   const handleLinkClick = async (link: any) => {
