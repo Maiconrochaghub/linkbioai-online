@@ -25,17 +25,9 @@ interface PublicLink {
   click_count: number;
 }
 
-interface PublicSocialLink {
-  id: string;
-  platform: string;
-  url: string;
-  position: number;
-}
-
 interface PublicPageData {
   profile: PublicProfile;
   links: PublicLink[];
-  socialLinks?: PublicSocialLink[];
 }
 
 export function usePublicPage(username: string) {
@@ -54,20 +46,26 @@ export function usePublicPage(username: string) {
     setError(null);
     
     try {
-      // Fetch profile
-      const { data: profile, error: profileError } = await supabase
+      console.log('🔍 Fetching public page for:', username);
+      
+      // Fetch profile com timeout otimizado
+      const profilePromise = supabase
         .from('profiles')
         .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
         .eq('username', username)
         .single();
 
+      const { data: profile, error: profileError } = await profilePromise;
+
       if (profileError) {
-        console.error('Profile not found:', profileError);
+        console.error('❌ Profile not found:', profileError);
         setError('Usuário não encontrado');
         return;
       }
 
-      // Fetch active links
+      console.log('✅ Profile found:', profile.name);
+
+      // Fetch links ativos apenas
       const { data: links, error: linksError } = await supabase
         .from('links')
         .select('id, title, url, icon, position, click_count')
@@ -76,30 +74,19 @@ export function usePublicPage(username: string) {
         .order('position', { ascending: true });
 
       if (linksError) {
-        console.error('Error fetching links:', linksError);
+        console.error('❌ Error fetching links:', linksError);
         setError('Erro ao carregar links');
         return;
       }
 
-      // Fetch social links
-      const { data: socialLinks, error: socialLinksError } = await supabase
-        .from('social_links')
-        .select('id, platform, url, position')
-        .eq('user_id', profile.id)
-        .order('position', { ascending: true });
-
-      if (socialLinksError) {
-        console.error('Error fetching social links:', socialLinksError);
-        // Don't return error for social links, just log it
-      }
+      console.log('✅ Links loaded:', links?.length || 0);
 
       setData({
         profile,
-        links: links || [],
-        socialLinks: socialLinks || []
+        links: links || []
       });
     } catch (error) {
-      console.error('Error fetching public page:', error);
+      console.error('❌ Error fetching public page:', error);
       setError('Erro inesperado');
     } finally {
       setLoading(false);
@@ -108,49 +95,38 @@ export function usePublicPage(username: string) {
 
   const trackClick = async (linkId: string) => {
     try {
-      // Insert click record for analytics
-      await supabase.from('clicks').insert({
+      // Track click em background sem bloquear
+      const trackPromise = supabase.from('clicks').insert({
         link_id: linkId,
-        ip_hash: null, // Could implement IP hashing for privacy
+        ip_hash: null,
         user_agent: navigator.userAgent,
         referer: document.referrer || null
       });
 
-      // Get current click count and increment it
-      const { data: linkData } = await supabase
-        .from('links')
-        .select('click_count')
-        .eq('id', linkId)
-        .single();
+      // Update click count em background
+      const updatePromise = supabase.rpc('increment_click_count', { link_id: linkId });
 
-      if (linkData) {
-        const newClickCount = (linkData.click_count || 0) + 1;
-        
-        // Update click count
-        const { error: updateError } = await supabase
-          .from('links')
-          .update({ click_count: newClickCount })
-          .eq('id', linkId);
-
-        if (updateError) {
-          console.error('Error updating click count:', updateError);
-        } else {
-          // Update local state
+      // Executar em background sem aguardar
+      Promise.all([trackPromise, updatePromise])
+        .then(() => {
+          console.log('✅ Click tracked successfully');
+          // Atualizar estado local se possível
           if (data) {
             setData(prev => ({
               ...prev!,
               links: prev!.links.map(link => 
                 link.id === linkId 
-                  ? { ...link, click_count: newClickCount }
+                  ? { ...link, click_count: link.click_count + 1 }
                   : link
               )
             }));
           }
-        }
-      }
+        })
+        .catch(error => {
+          console.error('❌ Error tracking click:', error);
+        });
     } catch (error) {
-      console.error('Error tracking click:', error);
-      // Don't show error to user, this is analytics tracking
+      console.error('❌ Error tracking click:', error);
     }
   };
 

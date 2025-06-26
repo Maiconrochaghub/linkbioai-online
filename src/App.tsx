@@ -7,7 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Lazy load pages for better performance
+// Lazy load otimizado com preload
 const Index = lazy(() => import('@/pages/Index'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const SignupPage = lazy(() => import('@/pages/SignupPage'));
@@ -19,28 +19,32 @@ const DemoPage = lazy(() => import('@/pages/DemoPage'));
 const OfflinePage = lazy(() => import('@/pages/OfflinePage'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
 
+// QueryClient otimizado para mobile
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 2 * 60 * 1000, // 2 minutos
+      cacheTime: 5 * 60 * 1000, // 5 minutos
       retry: (failureCount, error: any) => {
         if (error?.status === 404) return false;
-        return failureCount < 2;
+        return failureCount < 1; // Reduzido para 1 retry
       },
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
     },
   },
 });
 
-// Loading component
+// Loading otimizado para mobile
 function PageSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto">
-          <span className="text-white font-bold text-lg">L</span>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4">
+      <div className="text-center space-y-4 max-w-sm w-full">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto">
+          <span className="text-white font-bold text-sm sm:text-lg">L</span>
         </div>
-        <Skeleton className="h-6 w-32 mx-auto" />
-        <Skeleton className="h-4 w-48 mx-auto" />
+        <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
+        <Skeleton className="h-4 w-32 mx-auto" />
       </div>
     </div>
   );

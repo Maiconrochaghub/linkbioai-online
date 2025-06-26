@@ -8,9 +8,8 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ExternalLink, Instagram, Youtube, Github, Twitter, Linkedin, Globe, Phone, Mail, Crown, Shield } from 'lucide-react';
 import { usePublicPage } from '@/hooks/usePublicPage';
-import { useSlowConnection } from '@/hooks/useSlowConnection';
 
-// Memoized link item component para evitar re-renders desnecessários
+// Componente de link otimizado e memoizado
 const LinkItem = memo(({ link, onTrackClick }: { 
   link: any, 
   onTrackClick: (linkId: string, url: string) => void 
@@ -32,7 +31,7 @@ const LinkItem = memo(({ link, onTrackClick }: {
   return (
     <Button
       variant="outline"
-      className="w-full h-auto p-4 rounded-xl bg-white hover:bg-gray-50 border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group"
+      className="w-full h-auto p-4 rounded-xl bg-white hover:bg-gray-50 border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 group touch-manipulation"
       onClick={() => onTrackClick(link.id, link.url)}
     >
       <div className="flex items-center space-x-3 w-full">
@@ -40,7 +39,7 @@ const LinkItem = memo(({ link, onTrackClick }: {
           {getIcon(link.icon)}
         </div>
         <div className="flex-1 text-left">
-          <p className="font-medium text-gray-900 group-hover:text-purple-600 transition-colors">
+          <p className="font-medium text-gray-900 group-hover:text-purple-600 transition-colors text-sm sm:text-base">
             {link.title}
           </p>
           {link.click_count > 0 && (
@@ -57,27 +56,22 @@ const LinkItem = memo(({ link, onTrackClick }: {
 
 LinkItem.displayName = 'LinkItem';
 
-// Skeleton para página pública
+// Skeleton otimizado para mobile
 function PublicPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 py-4 sm:py-8">
       <div className="container mx-auto px-4 max-w-md">
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-          <div className="p-8 text-center space-y-6">
-            {/* Avatar skeleton */}
-            <Skeleton className="w-24 h-24 rounded-full mx-auto" />
-            
-            {/* Name and bio skeleton */}
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+          <div className="p-6 sm:p-8 text-center space-y-4 sm:space-y-6">
+            <Skeleton className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto" />
             <div className="space-y-2">
-              <Skeleton className="h-6 w-32 mx-auto" />
+              <Skeleton className="h-5 sm:h-6 w-32 mx-auto" />
               <Skeleton className="h-4 w-48 mx-auto" />
               <Skeleton className="h-4 w-20 mx-auto" />
             </div>
-            
-            {/* Links skeleton */}
             <div className="space-y-3">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-14 w-full rounded-xl" />
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 sm:h-14 w-full rounded-xl" />
               ))}
             </div>
           </div>
@@ -90,38 +84,61 @@ function PublicPageSkeleton() {
 export default function PublicPageOptimized() {
   const { username } = useParams<{ username: string }>();
   const { data, loading, error, trackClick } = usePublicPage(username!);
-  const isSlowConnection = useSlowConnection();
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Preload da imagem do avatar para melhor UX
+  // Preload avatar otimizado
   useEffect(() => {
     if (data?.profile?.avatar_url) {
       const img = new Image();
       img.onload = () => setImageLoaded(true);
+      img.onerror = () => setImageLoaded(true); // Marcar como carregado mesmo com erro
       img.src = data.profile.avatar_url;
+    } else {
+      setImageLoaded(true);
     }
   }, [data?.profile?.avatar_url]);
 
+  // Estados de loading e erro otimizados
   if (loading) {
     return <PublicPageSkeleton />;
   }
 
   if (error || !data) {
-    return <Navigate to="/404" replace />;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 py-8 flex items-center justify-center px-4">
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg max-w-md w-full">
+          <div className="p-8 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-red-500" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900 mb-2">Página não encontrada</h1>
+            <p className="text-gray-600 mb-4">
+              O usuário que você está procurando não existe ou não está disponível.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/'}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            >
+              Voltar ao início
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   const { profile, links } = data;
 
   const handleLinkClick = async (linkId: string, url: string) => {
     try {
-      // Track click em background
+      // Track click em background sem bloquear
       trackClick(linkId);
       
-      // Abrir link
+      // Abrir link imediatamente
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       console.error('Error tracking click:', error);
-      // Ainda assim abrir o link
+      // Abrir link mesmo se o tracking falhar
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
@@ -139,13 +156,13 @@ export default function PublicPageOptimized() {
   return (
     <div className={`min-h-screen py-4 sm:py-8 ${getThemeBackground(profile.theme || 'default')}`}>
       <div className="container mx-auto px-4 max-w-md">
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-          <div className="p-6 sm:p-8 text-center space-y-6">
-            {/* Profile Section */}
-            <div className="space-y-4">
+        <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+          <div className="p-6 sm:p-8 text-center space-y-4 sm:space-y-6">
+            {/* Profile Section - Otimizado */}
+            <div className="space-y-3 sm:space-y-4">
               <div className="relative">
                 <Avatar className="w-20 h-20 sm:w-24 sm:h-24 mx-auto border-4 border-white shadow-lg">
-                  {imageLoaded || !isSlowConnection ? (
+                  {imageLoaded ? (
                     <AvatarImage 
                       src={profile.avatar_url} 
                       alt={profile.name}
@@ -154,21 +171,21 @@ export default function PublicPageOptimized() {
                   ) : (
                     <Skeleton className="w-full h-full rounded-full" />
                   )}
-                  <AvatarFallback className="bg-purple-100 text-purple-600 text-xl font-bold">
+                  <AvatarFallback className="bg-purple-100 text-purple-600 text-lg sm:text-xl font-bold">
                     {profile.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 
-                {/* Status badges */}
+                {/* Status badges - Otimizado */}
                 {(profile.is_founder || profile.is_admin) && (
                   <div className="absolute -top-1 -right-1">
                     {profile.is_admin ? (
-                      <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                        <Shield className="w-3 h-3 text-white" />
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                        <Shield className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                       </div>
                     ) : profile.is_founder ? (
-                      <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                        <Crown className="w-3 h-3 text-white" />
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                        <Crown className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
                       </div>
                     ) : null}
                   </div>
@@ -176,13 +193,13 @@ export default function PublicPageOptimized() {
               </div>
               
               <div className="space-y-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
                   {profile.name}
                   {profile.is_founder && (
-                    <Crown className="inline w-4 h-4 ml-2 text-yellow-600" />
+                    <Crown className="inline w-3 h-3 sm:w-4 sm:h-4 ml-2 text-yellow-600" />
                   )}
                   {profile.is_admin && (
-                    <Shield className="inline w-4 h-4 ml-2 text-yellow-600" />
+                    <Shield className="inline w-3 h-3 sm:w-4 sm:h-4 ml-2 text-yellow-600" />
                   )}
                 </h1>
                 
@@ -208,15 +225,16 @@ export default function PublicPageOptimized() {
               </div>
             </div>
 
-            {/* Links Section */}
+            {/* Links Section - Otimizado */}
             <div className="space-y-3">
               {links.length === 0 ? (
-                <div className="py-8">
+                <div className="py-6 sm:py-8">
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Globe className="w-6 h-6 text-gray-400" />
                   </div>
+                  <h3 className="text-base sm:text-lg font-medium mb-2">Nenhum link disponível</h3>
                   <p className="text-sm text-gray-500">
-                    Nenhum link disponível no momento
+                    Este perfil ainda não possui links
                   </p>
                 </div>
               ) : (
@@ -230,8 +248,8 @@ export default function PublicPageOptimized() {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="pt-6 border-t border-gray-200">
+            {/* Footer - Otimizado */}
+            <div className="pt-4 sm:pt-6 border-t border-gray-200">
               <p className="text-xs text-gray-400">
                 Criado com{' '}
                 <a 
