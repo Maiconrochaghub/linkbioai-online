@@ -52,28 +52,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Refs para controle de execução
+  // Control refs to prevent race conditions
   const mountedRef = useRef(true);
   const initializingRef = useRef(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const profileFetchingRef = useRef(false);
+  const fetchingProfileRef = useRef(false);
 
-  // Debounce para fetchProfile
-  const fetchProfileDebounced = useCallback(async (userId: string) => {
-    if (profileFetchingRef.current) {
-      console.log('🔄 Profile fetch already in progress, skipping...');
+  // Debounced profile fetch to prevent multiple simultaneous calls
+  const fetchProfile = useCallback(async (userId: string, retryCount = 0) => {
+    if (fetchingProfileRef.current || !mountedRef.current) {
+      console.log('🔄 Profile fetch already in progress or unmounted, skipping...');
       return;
     }
 
-    if (!mountedRef.current) {
-      console.log('🔄 Component unmounted, skipping profile fetch');
-      return;
-    }
-
-    profileFetchingRef.current = true;
+    fetchingProfileRef.current = true;
     
     try {
-      console.log('🔄 Fetching profile for user:', userId);
+      console.log('🔄 Fetching profile for user:', userId, `(attempt ${retryCount + 1})`);
       
       const { data, error } = await supabase
         .from('profiles')
@@ -85,6 +80,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('❌ Error fetching profile:', error);
+        
+        // Retry logic for network errors
+        if (retryCount < 2 && (error.message.includes('network') || error.code === 'PGRST301')) {
+          console.log('🔄 Retrying profile fetch...');
+          setTimeout(() => {
+            if (mountedRef.current) {
+              fetchProfile(userId, retryCount + 1);
+            }
+          }, 1000 * (retryCount + 1));
+          return;
+        }
+        
         setProfile(null);
         return;
       }
@@ -92,29 +99,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('✅ Profile fetched successfully:', data?.username);
       setProfile(data);
     } catch (err) {
-      console.error('❌ Error fetching profile:', err);
+      console.error('❌ Unexpected error fetching profile:', err);
       if (mountedRef.current) {
         setProfile(null);
       }
     } finally {
-      profileFetchingRef.current = false;
+      fetchingProfileRef.current = false;
     }
   }, []);
 
   const refreshProfile = useCallback(async () => {
     if (user && mountedRef.current) {
-      await fetchProfileDebounced(user.id);
+      await fetchProfile(user.id);
     }
-  }, [user, fetchProfileDebounced]);
+  }, [user, fetchProfile]);
 
-  // Timeout de segurança para loading
+  // Safety timeout to prevent infinite loading
   useEffect(() => {
     loadingTimeoutRef.current = setTimeout(() => {
       if (mountedRef.current && loading) {
         console.log('⚠️ Loading timeout reached, forcing loading false');
         setLoading(false);
       }
-    }, 10000); // 10 segundos máximo
+    }, 10000); // 10 seconds maximum
 
     return () => {
       if (loadingTimeoutRef.current) {
@@ -123,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [loading]);
 
-  // Inicialização única do auth
+  // Single initialization effect
   useEffect(() => {
     if (initializingRef.current) {
       console.log('🔄 Auth already initializing, skipping...');
@@ -137,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
-        // 1. Configurar listener PRIMEIRO
+        // Set up auth state listener FIRST
         authSubscription = supabase.auth.onAuthStateChange(async (event, session) => {
           if (!mountedRef.current) return;
           
@@ -145,11 +152,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           if (session?.user) {
             setUser(session.user);
-            // Buscar perfil apenas em eventos específicos para evitar loops
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            
+            // Only fetch profile on specific events to avoid loops
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+              // Small delay to ensure user state is set
               setTimeout(() => {
                 if (mountedRef.current) {
-                  fetchProfileDebounced(session.user.id);
+                  fetchProfile(session.user.id);
                 }
               }, 100);
             }
@@ -163,7 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         });
 
-        // 2. Verificar sessão inicial DEPOIS
+        // Then check for existing session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -171,7 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (session?.user && mountedRef.current) {
           console.log('✅ Initial session found:', session.user.email);
           setUser(session.user);
-          await fetchProfileDebounced(session.user.id);
+          await fetchProfile(session.user.id);
         } else {
           console.log('ℹ️ No initial session found');
         }
@@ -195,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, []); // Dependências vazias - executa apenas uma vez
+  }, []); // Empty dependencies - runs only once
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -266,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: error.message };
       }
 
+      // Update local state
       setProfile(prev => prev ? { ...prev, ...updates } : null);
       console.log('✅ Profile updated successfully');
       

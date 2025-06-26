@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePublicPage } from "@/hooks/usePublicPage";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const getIcon = (iconName: string) => {
   const iconMap = {
@@ -97,61 +99,106 @@ const getThemeClasses = (theme: string) => {
   return themeMap[theme as keyof typeof themeMap] || themeMap.default;
 };
 
+const LoadingSkeleton = () => (
+  <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+    <div className="container mx-auto px-4 py-8 max-w-md">
+      <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-2xl p-6 border mb-8">
+        <div className="text-center">
+          <Skeleton className="w-24 h-24 rounded-full mx-auto mb-4" />
+          <Skeleton className="h-6 w-32 mx-auto mb-2" />
+          <Skeleton className="h-4 w-24 mx-auto mb-2" />
+          <Skeleton className="h-5 w-20 mx-auto" />
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const PublicPage = () => {
   const { username } = useParams<{ username: string }>();
   const { data, loading, error, trackClick } = usePublicPage(username || '');
   const { toast } = useToast();
 
   const handleLinkClick = async (link: any) => {
-    await trackClick(link.id);
-    
-    toast({
-      title: "Redirecionando...",
-      description: `Abrindo ${link.title}`,
-    });
-    
-    window.open(link.url, '_blank', 'noopener,noreferrer');
+    try {
+      await trackClick(link.id);
+      
+      toast({
+        title: "Redirecionando...",
+        description: `Abrindo ${link.title}`,
+        duration: 1500,
+      });
+      
+      // Ensure URL has protocol
+      let url = link.url;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Error tracking click:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível rastrear o clique",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSocialClick = (url: string, platform: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    try {
+      // Ensure URL has protocol
+      let socialUrl = url;
+      if (!socialUrl.startsWith('http://') && !socialUrl.startsWith('https://')) {
+        socialUrl = 'https://' + socialUrl;
+      }
+      
+      window.open(socialUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Error opening social link:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível abrir o link",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-600">Carregando página...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center">
-        <div className="text-center space-y-6 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4">
+        <div className="text-center space-y-6 max-w-md">
           <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
             <Globe className="w-12 h-12 text-gray-400" />
           </div>
           
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-gray-900">Página não encontrada</h1>
-            <p className="text-gray-600">
-              O usuário <span className="font-mono bg-gray-100 px-2 py-1 rounded">@{username}</span> não foi encontrado.
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Página não encontrada</h1>
+            <p className="text-gray-600 text-sm md:text-base">
+              O usuário <span className="font-mono bg-gray-100 px-2 py-1 rounded text-xs md:text-sm">@{username}</span> não foi encontrado.
             </p>
           </div>
 
           <div className="space-y-3">
-            <Button asChild className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
+            <Button asChild className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 w-full md:w-auto">
               <a href="/">
                 Criar Minha Página
                 <ArrowRight className="w-4 h-4 ml-2" />
               </a>
             </Button>
             
-            <p className="text-sm text-gray-500">
+            <p className="text-xs md:text-sm text-gray-500">
               Crie sua página personalizada gratuitamente
             </p>
           </div>
@@ -167,136 +214,165 @@ const PublicPage = () => {
   const textColor = profile.text_color || '#1F2937';
 
   return (
-    <div className={theme.background}>
-      <style>
-        {`
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          
-          .fade-in-up {
-            animation: fadeInUp 0.6s ease-out forwards;
-          }
-        `}
-      </style>
+    <>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content={buttonColor} />
+        <meta name="description" content={`${profile.name} - ${profile.bio || 'Página de links'}`} />
+        <title>{profile.name} - LinkBio.AI</title>
+      </head>
       
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        {/* Profile Header */}
-        <div className={`text-center mb-8 ${theme.container} rounded-2xl p-6 border transition-all duration-300`}>
-          <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-white shadow-lg">
-            <AvatarImage src={profile.avatar_url} />
-            <AvatarFallback className="bg-purple-100 text-purple-600 text-2xl font-bold">
-              {profile.name.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          
-          <h1 className="text-2xl font-bold mb-2" style={{ color: textColor }}>
-            {profile.name}
-          </h1>
-          
-          {profile.bio && (
-            <div className="mb-3 whitespace-pre-line text-sm leading-relaxed" style={{ color: textColor, opacity: 0.8 }}>
-              {profile.bio}
+      <div className={theme.background}>
+        <style>
+          {`
+            @keyframes fadeInUp {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            
+            .fade-in-up {
+              animation: fadeInUp 0.6s ease-out forwards;
+            }
+            
+            /* Mobile optimizations */
+            @media (max-width: 768px) {
+              body {
+                -webkit-text-size-adjust: 100%;
+                -webkit-font-smoothing: antialiased;
+              }
+              
+              .touch-target {
+                min-height: 44px;
+                min-width: 44px;
+              }
+            }
+          `}
+        </style>
+        
+        <div className="container mx-auto px-4 py-6 md:py-8 max-w-md">
+          {/* Profile Header */}
+          <div className={`text-center mb-6 md:mb-8 ${theme.container} rounded-2xl p-4 md:p-6 border transition-all duration-300`}>
+            <Avatar className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-3 md:mb-4 border-4 border-white shadow-lg">
+              <AvatarImage 
+                src={profile.avatar_url} 
+                alt={profile.name}
+                loading="eager"
+                onError={(e) => {
+                  console.log('Avatar failed to load:', profile.avatar_url);
+                }}
+              />
+              <AvatarFallback className="bg-purple-100 text-purple-600 text-xl md:text-2xl font-bold">
+                {profile.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            
+            <h1 className="text-xl md:text-2xl font-bold mb-2" style={{ color: textColor }}>
+              {profile.name}
+            </h1>
+            
+            {profile.bio && (
+              <div className="mb-3 whitespace-pre-line text-sm leading-relaxed px-2" style={{ color: textColor, opacity: 0.8 }}>
+                {profile.bio}
+              </div>
+            )}
+            
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              <Badge variant="secondary" className={`text-xs md:text-sm ${theme.badge}`}>
+                @{profile.username}
+              </Badge>
+              {profile.is_founder && (
+                <Badge variant="secondary" className="text-xs md:text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
+                  Founder PRO
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Links Section */}
+          <div className="space-y-3 md:space-y-4 mb-6 md:mb-8">
+            {links.map((link, index) => (
+              <button
+                key={link.id}
+                onClick={() => handleLinkClick(link)}
+                className="w-full rounded-2xl p-3 md:p-4 shadow-sm hover:shadow-md transition-all duration-200 border group transform hover:scale-105 fade-in-up touch-target active:scale-95"
+                style={{ 
+                  animationDelay: `${index * 100}ms`,
+                  backgroundColor: buttonColor,
+                  color: textColor === '#FFFFFF' ? '#000000' : '#FFFFFF',
+                  borderColor: buttonColor
+                }}
+              >
+                <div className="flex items-center space-x-3 md:space-x-4">
+                  <div className="flex-shrink-0">
+                    {getIcon(link.icon)}
+                  </div>
+                  
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="font-semibold text-sm md:text-base truncate">
+                      {link.title}
+                    </p>
+                    {link.click_count > 0 && (
+                      <p className="text-xs opacity-70">
+                        {link.click_count} {link.click_count === 1 ? 'clique' : 'cliques'}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <ExternalLink className="w-4 h-4 opacity-70 flex-shrink-0" />
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Social Links Section */}
+          {socialLinks && socialLinks.length > 0 && (
+            <div className="mb-6 md:mb-8 flex justify-center">
+              <div className="flex justify-center flex-wrap gap-4 md:gap-6">
+                {socialLinks.map((social) => (
+                  <button
+                    key={social.id}
+                    onClick={() => handleSocialClick(social.url, social.platform)}
+                    className="transition-transform duration-200 hover:scale-110 transform touch-target active:scale-95 p-2 rounded-full"
+                    title={social.platform}
+                  >
+                    {getSocialIcon(social.platform)}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-          
-          <div className="flex items-center justify-center gap-2">
-            <Badge variant="secondary" className={`text-sm ${theme.badge}`}>
-              @{profile.username}
-            </Badge>
-            {profile.is_founder && (
-              <Badge variant="secondary" className="text-sm bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
-                Founder PRO
-              </Badge>
-            )}
-          </div>
-        </div>
 
-        {/* Links Section */}
-        <div className="space-y-4 mb-8">
-          {links.map((link, index) => (
-            <button
-              key={link.id}
-              onClick={() => handleLinkClick(link)}
-              className="w-full rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 border group transform hover:scale-105 fade-in-up"
-              style={{ 
-                animationDelay: `${index * 100}ms`,
-                backgroundColor: buttonColor,
-                color: textColor === '#FFFFFF' ? '#000000' : '#FFFFFF',
-                borderColor: buttonColor
-              }}
-            >
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
-                  {getIcon(link.icon)}
+          {/* Footer - Only show branding if not PRO */}
+          {profile.plan !== 'pro' && !profile.is_admin && (
+            <div className={`text-center py-4 md:py-6 border-t rounded-2xl ${theme.footer} border transition-all duration-300`}>
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">L</span>
                 </div>
-                
-                <div className="flex-1 text-left">
-                  <p className="font-semibold">
-                    {link.title}
-                  </p>
-                  {link.click_count > 0 && (
-                    <p className="text-xs opacity-70">
-                      {link.click_count} {link.click_count === 1 ? 'clique' : 'cliques'}
-                    </p>
-                  )}
-                </div>
-                
-                <ExternalLink className="w-4 h-4 opacity-70" />
+                <span className={`text-sm font-semibold ${theme.text}`}>LinkBio.AI</span>
               </div>
-            </button>
-          ))}
+              
+              <p className={`text-xs mb-3 ${theme.textMuted}`}>
+                Crie sua página personalizada gratuitamente
+              </p>
+              
+              <Button size="sm" variant="outline" asChild className={`text-xs ${theme.button}`}>
+                <a href="/">
+                  Criar Minha Página
+                  <ArrowRight className="w-3 h-3 ml-1" />
+                </a>
+              </Button>
+            </div>
+          )}
         </div>
-
-        {/* Social Links Section - Updated */}
-        {socialLinks && socialLinks.length > 0 && (
-          <div className="mb-8 flex justify-center">
-            <div className="flex justify-center flex-wrap gap-4">
-              {socialLinks.map((social) => (
-                <button
-                  key={social.id}
-                  onClick={() => handleSocialClick(social.url, social.platform)}
-                  className="transition-transform duration-200 hover:scale-110 transform"
-                  title={social.platform}
-                >
-                  {getSocialIcon(social.platform)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Footer - Only show branding if not PRO */}
-        {profile.plan !== 'pro' && !profile.is_admin && (
-          <div className={`text-center py-6 border-t rounded-2xl ${theme.footer} border transition-all duration-300`}>
-            <div className="flex items-center justify-center space-x-2 mb-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-xs">L</span>
-              </div>
-              <span className={`text-sm font-semibold ${theme.text}`}>LinkBio.AI</span>
-            </div>
-            
-            <p className={`text-xs mb-3 ${theme.textMuted}`}>
-              Crie sua página personalizada gratuitamente
-            </p>
-            
-            <Button size="sm" variant="outline" asChild className={`text-xs ${theme.button}`}>
-              <a href="/">
-                Criar Minha Página
-                <ArrowRight className="w-3 h-3 ml-1" />
-              </a>
-            </Button>
-          </div>
-        )}
       </div>
-    </div>
+    </>
   );
 };
 
