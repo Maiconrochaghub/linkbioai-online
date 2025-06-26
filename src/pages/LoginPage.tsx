@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, isMaiconRocha } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +57,9 @@ export default function LoginPage() {
           description: "Redirecionando para seu painel...",
         });
         
-        // Redirect to dashboard after successful login
-        navigate("/dashboard");
+        // AuthContext vai gerenciar o redirecionamento automaticamente
+        // Não fazemos navigate manual aqui
+        console.log('✅ Login successful, AuthContext will handle redirect');
       }
     } catch (error) {
       toast({
@@ -80,12 +80,22 @@ export default function LoginPage() {
   };
 
   // Bypass para Maicon durante desenvolvimento
-  const handleMaiconBypass = () => {
+  const handleMaiconBypass = async () => {
     toast({
       title: "🛡️ Acesso de Desenvolvedor",
-      description: "Redirecionando para o dashboard...",
+      description: "Fazendo login automático...",
     });
-    navigate("/dashboard");
+    
+    // Fazer login real do Maicon
+    const { error } = await signIn('maicon@thiagomatos.com.br', 'senha_dev_123');
+    
+    if (error) {
+      toast({
+        title: "Erro no bypass",
+        description: "Credenciais de desenvolvimento inválidas.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
