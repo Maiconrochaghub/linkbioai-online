@@ -160,7 +160,7 @@ const PublicPage = () => {
     );
   }
 
-  const { profile, links, socialLinks } = data;
+  const { profile, links } = data;
   const theme = getThemeClasses(profile.theme || 'default');
   
   const buttonColor = profile.button_color || '#8B5CF6';
@@ -254,24 +254,6 @@ const PublicPage = () => {
             </button>
           ))}
         </div>
-
-        {/* Social Links Section - Updated */}
-        {socialLinks && socialLinks.length > 0 && (
-          <div className="mb-8 flex justify-center">
-            <div className="flex justify-center flex-wrap gap-4">
-              {socialLinks.map((social) => (
-                <button
-                  key={social.id}
-                  onClick={() => handleSocialClick(social.url, social.platform)}
-                  className="transition-transform duration-200 hover:scale-110 transform"
-                  title={social.platform}
-                >
-                  {getSocialIcon(social.platform)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Footer - Only show branding if not PRO */}
         {profile.plan !== 'pro' && !profile.is_admin && (

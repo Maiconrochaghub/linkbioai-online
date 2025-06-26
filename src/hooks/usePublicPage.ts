@@ -103,8 +103,13 @@ export function usePublicPage(username: string) {
         referer: document.referrer || null
       });
 
-      // Update click count em background
-      const updatePromise = supabase.rpc('increment_click_count', { link_id: linkId });
+      // Update click count usando SQL direto
+      const updatePromise = supabase
+        .from('links')
+        .update({ 
+          click_count: supabase.sql`COALESCE(click_count, 0) + 1`
+        })
+        .eq('id', linkId);
 
       // Executar em background sem aguardar
       Promise.all([trackPromise, updatePromise])

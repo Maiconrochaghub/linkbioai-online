@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 2 * 60 * 1000, // 2 minutos
-      cacheTime: 5 * 60 * 1000, // 5 minutos
+      gcTime: 5 * 60 * 1000, // 5 minutos (renamed from cacheTime)
       retry: (failureCount, error: any) => {
         if (error?.status === 404) return false;
         return failureCount < 1; // Reduzido para 1 retry
