@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, isMaiconRocha } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +57,8 @@ export default function LoginPage() {
           description: "Redirecionando para seu painel...",
         });
         
-        // Redirect to dashboard after successful login
-        navigate("/dashboard");
+        // Removido: redirecionamento manual - deixamos o sistema de rotas gerenciar
+        // O ProtectedRoute automaticamente redirecionará para /dashboard
       }
     } catch (error) {
       toast({
@@ -85,7 +84,7 @@ export default function LoginPage() {
       title: "🛡️ Acesso de Desenvolvedor",
       description: "Redirecionando para o dashboard...",
     });
-    navigate("/dashboard");
+    // Removido: redirecionamento manual para deixar o sistema gerenciar
   };
 
   return (

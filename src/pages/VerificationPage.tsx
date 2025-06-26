@@ -28,6 +28,7 @@ export default function VerificationPage() {
           description: "Redirecionando para seu painel...",
         });
         
+        // Pequeno delay para mostrar a mensagem antes do redirect
         setTimeout(() => {
           navigate("/dashboard", { replace: true });
         }, 1500);
@@ -67,9 +68,11 @@ export default function VerificationPage() {
               description: "Redirecionando para seu painel...",
             });
             
+            // O AuthContext vai detectar a mudança de auth e o ProtectedRoute vai redirecionar
+            // Mas adicionamos um timeout como fallback
             setTimeout(() => {
               navigate("/dashboard", { replace: true });
-            }, 1500);
+            }, 2000);
           } else {
             throw new Error('No user in session data');
           }

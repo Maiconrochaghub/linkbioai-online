@@ -25,7 +25,14 @@ const queryClient = new QueryClient({
 });
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
+  
+  console.log('🛡️ ProtectedRoute state:', { 
+    hasUser: !!user, 
+    hasProfile: !!profile, 
+    loading, 
+    userEmail: user?.email 
+  });
   
   if (loading) {
     return (
@@ -38,15 +45,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (!user) {
+  // Aguardar tanto user quanto profile antes de renderizar
+  if (!user || !profile) {
+    console.log('🔄 Redirecting to login - missing user or profile');
     return <Navigate to="/login" replace />;
   }
   
+  console.log('✅ ProtectedRoute - user authenticated, rendering children');
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  
+  console.log('🌐 PublicRoute state:', { 
+    hasUser: !!user, 
+    loading, 
+    userEmail: user?.email 
+  });
   
   if (loading) {
     return (
@@ -60,6 +76,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (user) {
+    console.log('🔄 PublicRoute - user authenticated, redirecting to dashboard');
     return <Navigate to="/dashboard" replace />;
   }
   
