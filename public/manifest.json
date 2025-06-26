@@ -11,12 +11,14 @@
   "categories": ["business", "social", "productivity"],
   "lang": "pt-BR",
   "dir": "ltr",
+  "scope": "/",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "icons": [
     {
       "src": "/favicon.ico",
       "sizes": "48x48",
       "type": "image/x-icon",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon-192.png",
@@ -39,8 +41,9 @@
       "url": "/dashboard",
       "icons": [
         {
-          "src": "/favicon.ico",
-          "sizes": "48x48"
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     },
@@ -51,10 +54,58 @@
       "url": "/signup",
       "icons": [
         {
-          "src": "/favicon.ico",
-          "sizes": "48x48"
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Adicionar Link",
+      "short_name": "Add Link",
+      "description": "Adicionar novo link rapidamente",
+      "url": "/dashboard?action=add-link",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Ver Minha Página",
+      "short_name": "My Page",
+      "description": "Visualizar sua página pública",
+      "url": "/dashboard?action=view-page",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard do LinkBio.AI"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512", 
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "LinkBio.AI Mobile"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }

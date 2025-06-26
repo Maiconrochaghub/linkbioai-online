@@ -30,6 +30,8 @@ import { ShareModal } from "./ShareModal";
 import { PlanLimitAlert } from "./PlanLimitAlert";
 import { FounderBadge } from "./FounderBadge";
 import { usePlan } from "@/hooks/usePlan";
+import { InstallButton } from "@/components/pwa/InstallButton";
+import { UpdateNotification } from "@/components/pwa/UpdateNotification";
 
 export function Dashboard() {
   const { user, profile, loading, signOut, isMasterAdmin, isMaiconRocha } = useAuth();
@@ -100,6 +102,8 @@ export function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-4">
+              <InstallButton variant="outline" size="sm" />
+              
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -442,6 +446,9 @@ export function Dashboard() {
         onOpenChange={setShowShareModal}
         username={profile.username}
       />
+      
+      {/* PWA Update Notification */}
+      <UpdateNotification />
     </div>
   );
 }
