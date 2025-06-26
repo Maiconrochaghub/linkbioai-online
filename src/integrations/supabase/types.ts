@@ -205,6 +205,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      increment_click_count: {
+        Args: { link_id: string }
+        Returns: undefined
+      }
       is_master_admin: {
         Args: { user_id: string }
         Returns: boolean

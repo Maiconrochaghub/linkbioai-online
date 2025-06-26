@@ -103,10 +103,13 @@ export function usePublicPage(username: string) {
         referer: document.referrer || null
       });
 
-      // Update click count usando a stored procedure
-      const updatePromise = supabase.rpc('increment_click_count', { 
-        link_id: linkId 
-      });
+      // Update click count using direct SQL update instead of RPC for now
+      const updatePromise = supabase
+        .from('links')
+        .update({ 
+          click_count: data?.links.find(link => link.id === linkId)?.click_count || 0 + 1
+        })
+        .eq('id', linkId);
 
       // Executar em background sem aguardar
       Promise.all([trackPromise, updatePromise])
