@@ -8,16 +8,10 @@ import { PricingSection } from "@/components/landing/PricingSection";
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { SecuritySection } from "@/components/landing/SecuritySection";
 import { CallToActionSection } from "@/components/landing/CallToActionSection";
-import { PWABanner } from "@/components/pwa/PWABanner";
-import { InstallButton } from "@/components/pwa/InstallButton";
-import { UpdateNotification } from "@/components/pwa/UpdateNotification";
 
 export default function Index() {
   return (
     <div className="min-h-screen">
-      {/* PWA Banner */}
-      <PWABanner />
-      
       {/* Header */}
       <header className="container mx-auto px-4 py-6 relative z-10">
         <div className="flex items-center justify-between">
@@ -31,8 +25,6 @@ export default function Index() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <InstallButton variant="outline" size="sm" />
-            
             <Link to="/login">
               <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
                 Entrar
@@ -107,9 +99,6 @@ export default function Index() {
           </div>
         </div>
       </footer>
-      
-      {/* PWA Update Notification */}
-      <UpdateNotification />
     </div>
   );
 }

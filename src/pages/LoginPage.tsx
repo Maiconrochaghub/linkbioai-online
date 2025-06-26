@@ -16,15 +16,9 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, user } = useAuth();
+  const { signIn, isMaiconRocha } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  // Se já estiver logado, redirecionar imediatamente
-  if (user) {
-    navigate('/dashboard', { replace: true });
-    return null;
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,17 +52,14 @@ export default function LoginPage() {
           description: error,
           variant: "destructive"
         });
-        setIsLoading(false);
       } else {
         toast({
           title: "Login realizado! 🎉",
           description: "Redirecionando para seu painel...",
         });
         
-        // Aguardar um momento para mostrar o toast, então redirecionar
-        setTimeout(() => {
-          navigate('/dashboard', { replace: true });
-        }, 500);
+        // Redirect to dashboard after successful login
+        navigate("/dashboard");
       }
     } catch (error) {
       toast({
@@ -76,6 +67,7 @@ export default function LoginPage() {
         description: "Erro inesperado. Tente novamente.",
         variant: "destructive"
       });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -87,32 +79,53 @@ export default function LoginPage() {
     }));
   };
 
+  // Bypass para Maicon durante desenvolvimento
+  const handleMaiconBypass = () => {
+    toast({
+      title: "🛡️ Acesso de Desenvolvedor",
+      description: "Redirecionando para o dashboard...",
+    });
+    navigate("/dashboard");
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header simplificado */}
-        <div className="text-center mb-6">
-          <Link to="/" className="inline-flex items-center text-purple-600 hover:text-purple-700 mb-4 text-sm">
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Voltar
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center text-purple-600 hover:text-purple-700 mb-4">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar ao início
           </Link>
           
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">L</span>
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               LinkBio.AI
             </h1>
           </div>
+          
+          {/* Botão de bypass para Maicon durante desenvolvimento */}
+          {process.env.NODE_ENV === 'development' && (
+            <Button
+              onClick={handleMaiconBypass}
+              variant="outline"
+              size="sm"
+              className="mb-4 border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+            >
+              🛡️ Acesso Dev (Maicon)
+            </Button>
+          )}
         </div>
 
         <Card>
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl font-bold">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">
               Acessar Painel
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-center">
               Digite suas credenciais para entrar
             </CardDescription>
           </CardHeader>
@@ -131,9 +144,7 @@ export default function LoginPage() {
                     placeholder="seu@email.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="pl-10 h-10"
-                    autoComplete="email"
-                    disabled={isLoading}
+                    className="pl-10 h-11"
                   />
                 </div>
               </div>
@@ -150,15 +161,12 @@ export default function LoginPage() {
                     placeholder="Digite sua senha"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="pl-10 pr-10 h-10"
-                    autoComplete="current-password"
-                    disabled={isLoading}
+                    className="pl-10 pr-10 h-11"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -167,7 +175,7 @@ export default function LoginPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-10 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
+                className="w-full h-11 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold"
                 disabled={isLoading}
               >
                 {isLoading ? (

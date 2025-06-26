@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,8 +30,6 @@ import { ShareModal } from "./ShareModal";
 import { PlanLimitAlert } from "./PlanLimitAlert";
 import { FounderBadge } from "./FounderBadge";
 import { usePlan } from "@/hooks/usePlan";
-import { InstallButton } from "@/components/pwa/InstallButton";
-import { UpdateNotification } from "@/components/pwa/UpdateNotification";
 
 export function Dashboard() {
   const { user, profile, loading, signOut, isMasterAdmin, isMaiconRocha } = useAuth();
@@ -62,16 +61,10 @@ export function Dashboard() {
       return;
     }
     
-    try {
-      console.log('🔗 Dashboard: Adicionando link via useLinks:', newLink);
-      await addLink({
-        title: newLink.title,
-        url: newLink.url
-      });
-    } catch (error) {
-      console.error('❌ Dashboard: Erro ao adicionar link:', error);
-      throw error; // Re-throw para que o modal possa tratar
-    }
+    await addLink({
+      title: newLink.title,
+      url: newLink.url
+    });
   };
 
   const handleManageSubscription = async () => {
@@ -107,8 +100,6 @@ export function Dashboard() {
             </div>
             
             <div className="flex items-center space-x-4">
-              <InstallButton variant="outline" size="sm" />
-              
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -344,11 +335,7 @@ export function Dashboard() {
                         </div>
                         <h3 className="text-lg font-medium mb-2">Nenhum link ainda</h3>
                         <p className="text-gray-600 mb-4">Comece adicionando seu primeiro link</p>
-                        <Button 
-                          onClick={() => setShowAddModal(true)} 
-                          variant="outline"
-                          disabled={!isPro && activeLinks >= maxLinks}
-                        >
+                        <Button onClick={() => setShowAddModal(true)} variant="outline">
                           Adicionar Primeiro Link
                         </Button>
                       </div>
@@ -455,9 +442,6 @@ export function Dashboard() {
         onOpenChange={setShowShareModal}
         username={profile.username}
       />
-      
-      {/* PWA Update Notification */}
-      <UpdateNotification />
     </div>
   );
 }

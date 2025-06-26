@@ -1,76 +1,113 @@
 
-import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from '@/contexts/AuthContextOptimized';
-import { Toaster } from '@/components/ui/toaster';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { LoadingSkeletonOptimized } from '@/components/ui/loading-skeleton-optimized';
-import { MobileOptimizations } from '@/components/mobile/MobileOptimizations';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import Index from "./pages/Index";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import PublicPage from "./pages/PublicPage";
+import NotFound from "./pages/NotFound";
+import DemoPage from "./pages/DemoPage";
+import VerificationPage from "./pages/VerificationPage";
+import { Dashboard } from "./components/dashboard/Dashboard";
+import UpgradePage from "./pages/UpgradePage";
 
-// Lazy load otimizado
-const Index = lazy(() => import('@/pages/Index'));
-const LoginPage = lazy(() => import('@/pages/LoginPage'));
-const SignupPage = lazy(() => import('@/pages/SignupPage'));
-const VerificationPage = lazy(() => import('@/pages/VerificationPage'));
-const DashboardOptimized = lazy(() => import('@/components/dashboard/DashboardOptimized').then(m => ({ default: m.DashboardOptimized })));
-const PublicPageOptimized = lazy(() => import('@/pages/PublicPageOptimized'));
-const UpgradePage = lazy(() => import('@/pages/UpgradePage'));
-const DemoPage = lazy(() => import('@/pages/DemoPage'));
-const OfflinePage = lazy(() => import('@/pages/OfflinePage'));
-const NotFound = lazy(() => import('@/pages/NotFound'));
-
-// QueryClient otimizado
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      gcTime: 10 * 60 * 1000, // 10 minutos
-      retry: (failureCount, error: any) => {
-        if (error?.status === 404) return false;
-        return failureCount < 2;
-      },
+      retry: 1,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
     },
   },
 });
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <MobileOptimizations>
-          <Router>
-            <div className="App">
-              <Suspense fallback={<LoadingSkeletonOptimized type="minimal" />}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/signup" element={<SignupPage />} />
-                  <Route path="/verify" element={<VerificationPage />} />
-                  <Route 
-                    path="/dashboard" 
-                    element={
-                      <ProtectedRoute>
-                        <DashboardOptimized />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  <Route path="/upgrade" element={<UpgradePage />} />
-                  <Route path="/demo" element={<DemoPage />} />
-                  <Route path="/offline" element={<OfflinePage />} />
-                  <Route path="/:username" element={<PublicPageOptimized />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-              <Toaster />
-            </div>
-          </Router>
-        </MobileOptimizations>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
 }
+
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/demo" element={<DemoPage />} />
+            <Route path="/verification" element={<VerificationPage />} />
+            
+            <Route path="/login" element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            } />
+            <Route path="/signup" element={
+              <PublicRoute>
+                <SignupPage />
+              </PublicRoute>
+            } />
+            
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/upgrade" element={
+              <ProtectedRoute>
+                <UpgradePage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/:username" element={<PublicPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

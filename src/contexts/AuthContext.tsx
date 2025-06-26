@@ -64,46 +64,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('❌ Error fetching profile:', error);
-        return null;
+        setProfile(null);
+        return;
       }
       
       console.log('✅ Profile fetched successfully:', data?.username);
-      return data;
+      setProfile(data);
     } catch (err) {
       console.error('❌ Error fetching profile:', err);
-      return null;
+      setProfile(null);
     }
   }, []);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
-      const profileData = await fetchProfile(user.id);
-      setProfile(profileData);
+      await fetchProfile(user.id);
     }
   }, [user, fetchProfile]);
 
   const signIn = async (email: string, password: string) => {
     try {
       console.log('🔐 Attempting sign in for:', email);
-      setLoading(true);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
         console.error('❌ Sign in error:', error.message);
-        setLoading(false);
         return { error: error.message };
       }
-
-      console.log('✅ Sign in successful, user:', data.user?.email);
-      // Loading será gerenciado pelo onAuthStateChange
+      
+      console.log('✅ Sign in successful');
       return { error: null };
     } catch (err) {
       console.error('❌ Unexpected sign in error:', err);
-      setLoading(false);
       return { error: err instanceof Error ? err.message : 'Erro desconhecido' };
     }
   };
@@ -117,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
         options: {
           data: { name: name },
-          emailRedirectTo: `${window.location.origin}/verify`
+          emailRedirectTo: `${window.location.origin}/verification`
         }
       });
       
@@ -168,17 +164,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       console.log('🚪 Signing out...');
-      setLoading(true);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       setUser(null);
       setProfile(null);
-      setLoading(false);
       console.log('✅ Sign out successful');
     } catch (err) {
       console.error('❌ Sign out error:', err);
-      setLoading(false);
     }
   };
 
@@ -191,78 +184,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   useEffect(() => {
+    if (initialized) return;
+    
     console.log('🚀 AuthProvider initializing...');
     
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        // Primeiro, configurar o listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (!mounted) return;
-          
-          console.log('🔄 Auth state changed:', event, session?.user?.email || 'no user');
-          
-          if (session?.user) {
-            console.log('📊 Setting user state:', session.user.email);
-            setUser(session.user);
-            
-            // Buscar perfil apenas quando necessário
-            if (event === 'SIGNED_IN' || (event === 'TOKEN_REFRESHED' && !profile)) {
-              console.log('🔄 Fetching profile after auth event:', event);
-              const profileData = await fetchProfile(session.user.id);
-              if (mounted) {
-                setProfile(profileData);
-              }
-            }
-          } else {
-            console.log('🚫 No user, clearing state');
-            setUser(null);
-            setProfile(null);
-          }
-          
-          if (mounted) {
-            setLoading(false);
-            setInitialized(true);
-          }
-        });
-
-        // Depois, verificar sessão existente
+        // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('❌ Error getting initial session:', error);
-          if (mounted) {
-            setLoading(false);
-            setInitialized(true);
-          }
-          return;
-        }
-
-        if (session?.user && mounted) {
+          console.error('❌ Error getting session:', error);
+        } else if (session?.user && mounted) {
           console.log('✅ Initial session found:', session.user.email);
           setUser(session.user);
-          
-          // Buscar perfil para sessão inicial
-          const profileData = await fetchProfile(session.user.id);
-          if (mounted) {
-            setProfile(profileData);
-            setLoading(false);
-            setInitialized(true);
-          }
+          await fetchProfile(session.user.id);
         } else {
           console.log('ℹ️ No initial session found');
-          if (mounted) {
-            setLoading(false);
-            setInitialized(true);
-          }
         }
-
-        return () => {
-          subscription.unsubscribe();
-        };
       } catch (err) {
         console.error('❌ Unexpected session error:', err);
+      } finally {
         if (mounted) {
           setLoading(false);
           setInitialized(true);
@@ -270,26 +214,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
+      console.log('🔄 Auth state changed:', event, session?.user?.email || 'no user');
+      
+      if (session?.user) {
+        setUser(session.user);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          // Use setTimeout to prevent blocking the auth state change
+          setTimeout(() => {
+            if (mounted) {
+              fetchProfile(session.user.id);
+            }
+          }, 0);
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+      
+      if (mounted) {
+        setLoading(false);
+      }
+    });
+
     initializeAuth();
 
     return () => {
       mounted = false;
+      subscription.unsubscribe();
     };
-  }, [fetchProfile, profile]);
-
-  // Não renderizar até estar inicializado
-  if (!initialized) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto">
-            <span className="text-white font-bold">L</span>
-          </div>
-          <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
-        </div>
-      </div>
-    );
-  }
+  }, [initialized, fetchProfile]);
 
   const value = {
     user,

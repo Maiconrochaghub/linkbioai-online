@@ -19,7 +19,7 @@ export default function VerificationPage() {
     const handleVerification = async () => {
       console.log('🔍 VerificationPage - Starting verification process');
       
-      // Se o usuário já está autenticado, redirecionar
+      // If user is already authenticated, redirect to dashboard
       if (user) {
         console.log('✅ User already authenticated, redirecting to dashboard');
         setStatus('success');
@@ -30,11 +30,11 @@ export default function VerificationPage() {
         
         setTimeout(() => {
           navigate("/dashboard", { replace: true });
-        }, 1000);
+        }, 1500);
         return;
       }
 
-      // Verificar tokens na URL
+      // Check for authentication tokens in URL
       const access_token = searchParams.get('access_token');
       const refresh_token = searchParams.get('refresh_token');
       const type = searchParams.get('type');
@@ -94,39 +94,39 @@ export default function VerificationPage() {
       }
     };
 
-    // Delay reduzido para carregamento mais rápido
-    const timeoutId = setTimeout(handleVerification, 200);
+    // Add a small delay to prevent immediate execution
+    const timeoutId = setTimeout(handleVerification, 500);
     
     return () => clearTimeout(timeoutId);
   }, [searchParams, user, navigate, toast]);
 
   const handleRetry = () => {
-    navigate('/login', { replace: true });
+    navigate('/login');
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header simplificado */}
-        <div className="text-center mb-6">
+        {/* Header */}
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">L</span>
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               LinkBio.AI
             </h1>
           </div>
         </div>
 
         <Card>
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-xl font-bold">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">
               {status === 'loading' && "Verificando acesso..."}
               {status === 'success' && "Acesso autorizado!"}
               {status === 'error' && "Erro na verificação"}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-center">
               {status === 'loading' && "Aguarde enquanto verificamos seu acesso"}
               {status === 'success' && "Redirecionando para seu painel"}
               {status === 'error' && "Ocorreu um problema com o link de verificação"}
@@ -136,22 +136,22 @@ export default function VerificationPage() {
           <CardContent>
             <div className="text-center space-y-4">
               {status === 'loading' && (
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
-                  <Loader2 className="w-6 h-6 text-purple-600 animate-spin" />
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                  <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
                 </div>
               )}
 
               {status === 'success' && (
                 <>
-                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
                   </div>
                   <div className="space-y-2">
                     <p className="text-green-700 font-medium">
                       Verificação concluída com sucesso!
                     </p>
                     <p className="text-sm text-gray-600">
-                      Redirecionando em alguns segundos...
+                      Você será redirecionado em alguns segundos...
                     </p>
                   </div>
                 </>
@@ -159,8 +159,8 @@ export default function VerificationPage() {
 
               {status === 'error' && (
                 <>
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                    <XCircle className="w-6 h-6 text-red-600" />
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                    <XCircle className="w-8 h-8 text-red-600" />
                   </div>
                   <div className="space-y-4">
                     <div className="space-y-2">
@@ -174,7 +174,6 @@ export default function VerificationPage() {
                     <Button 
                       onClick={handleRetry}
                       className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                      size="sm"
                     >
                       Tentar novamente
                     </Button>
