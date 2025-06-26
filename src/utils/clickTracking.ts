@@ -29,7 +29,7 @@ export const trackLinkClick = async (linkId: string): Promise<number> => {
         .eq('id', linkId);
 
       // Don't await tracking to avoid blocking user - handle promise properly
-      trackingPromise.then().catch(error => 
+      trackingPromise.then(() => {}).catch(error => 
         console.warn('⚠️ Falha no tracking (não crítico):', error)
       );
 
