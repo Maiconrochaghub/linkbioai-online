@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,8 @@ import {
   Crown,
   Users,
   ArrowLeft,
-  Loader2
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { usePlan } from "@/hooks/usePlan";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +26,7 @@ const UpgradePage = () => {
   const { toast } = useToast();
   const { isPro, isFounder, canUpgrade, founderCount, createCheckoutSession, loading } = usePlan();
   const [upgrading, setUpgrading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleUpgrade = async () => {
     if (!canUpgrade) {
@@ -36,17 +39,26 @@ const UpgradePage = () => {
     }
 
     setUpgrading(true);
+    setError(null);
+    
     try {
+      console.log('Starting upgrade process...');
+      
       await createCheckoutSession();
+      
       toast({
         title: "Redirecionando...",
         description: "Você será redirecionado para o checkout do Stripe.",
       });
     } catch (error) {
       console.error('Error during upgrade:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      setError(errorMessage);
+      
       toast({
         title: "Erro no upgrade",
-        description: "Ocorreu um erro ao iniciar o processo de upgrade. Tente novamente.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -115,6 +127,25 @@ const UpgradePage = () => {
               />
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-auto">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+                <p className="text-red-700 font-medium">Erro no Checkout</p>
+              </div>
+              <p className="text-red-600 text-sm mt-1">{error}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setError(null)}
+                className="mt-2"
+              >
+                Tentar Novamente
+              </Button>
+            </div>
+          )}
 
           {!canUpgrade && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg max-w-md mx-auto">
@@ -260,7 +291,7 @@ const UpgradePage = () => {
                   {upgrading ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Processando...
+                      Redirecionando para Stripe...
                     </>
                   ) : canUpgrade ? (
                     <>
@@ -326,3 +357,4 @@ const UpgradePage = () => {
 };
 
 export default UpgradePage;
+

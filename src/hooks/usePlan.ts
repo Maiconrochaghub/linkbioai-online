@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,19 +78,45 @@ export const usePlan = () => {
     }
 
     try {
+      console.log('Creating checkout session...');
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         headers: {
           Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(`Checkout error: ${error.message || 'Unknown error'}`);
+      }
+
+      if (!data?.url) {
+        console.error('No checkout URL returned:', data);
+        throw new Error('No checkout URL received from server');
+      }
+      
+      console.log('Checkout session created successfully:', data);
       
       // Open Stripe checkout in current tab
       window.location.href = data.url;
     } catch (error) {
       console.error('Error creating checkout session:', error);
-      throw error;
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Founder offer is no longer available')) {
+          throw new Error('A oferta de Fundador atingiu o limite de 10.000 usuários.');
+        } else if (error.message.includes('Authentication error')) {
+          throw new Error('Erro de autenticação. Faça login novamente.');
+        } else if (error.message.includes('STRIPE_SECRET_KEY')) {
+          throw new Error('Configuração do Stripe não encontrada. Tente novamente mais tarde.');
+        } else {
+          throw new Error(`Erro no checkout: ${error.message}`);
+        }
+      }
+      
+      throw new Error('Erro desconhecido no checkout. Tente novamente.');
     }
   };
 
@@ -122,3 +149,4 @@ export const usePlan = () => {
     openCustomerPortal
   };
 };
+
