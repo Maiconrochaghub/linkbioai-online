@@ -2,7 +2,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,19 +13,19 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/login');
+      navigate('/login', { replace: true });
     }
   }, [user, loading, navigate]);
 
+  // Loading otimizado - mais simples e rápido
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto">
-            <span className="text-white font-bold text-lg">L</span>
+        <div className="text-center">
+          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <span className="text-white font-bold">L</span>
           </div>
-          <Skeleton className="h-6 w-32 mx-auto" />
-          <Skeleton className="h-4 w-48 mx-auto" />
+          <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto" />
         </div>
       </div>
     );

@@ -5,18 +5,53 @@ export function useSlowConnection() {
   const [isSlowConnection, setIsSlowConnection] = useState(false);
 
   useEffect(() => {
-    // Detectar conexão lenta usando Network Information API
+    // Função para detectar conexão lenta
+    const checkConnection = () => {
+      // Verificar Network Information API
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection;
+        
+        const slowConnections = ['slow-2g', '2g'];
+        const moderateConnections = ['3g'];
+        
+        const isSlow = slowConnections.includes(connection.effectiveType) || 
+                      connection.downlink < 1.0;
+        const isModerate = moderateConnections.includes(connection.effectiveType) ||
+                          (connection.downlink >= 1.0 && connection.downlink < 2.0);
+        
+        setIsSlowConnection(isSlow || isModerate);
+        
+        console.log('📶 Connection type:', connection.effectiveType, 'Downlink:', connection.downlink, 'Slow:', isSlow || isModerate);
+        
+        return;
+      }
+
+      // Fallback: teste de velocidade simples
+      const startTime = performance.now();
+      const testImage = new Image();
+      
+      testImage.onload = () => {
+        const loadTime = performance.now() - startTime;
+        const isSlow = loadTime > 800; // Reduzido de 1000ms
+        setIsSlowConnection(isSlow);
+        console.log('📶 Connection test:', loadTime + 'ms', 'Slow:', isSlow);
+      };
+      
+      testImage.onerror = () => {
+        setIsSlowConnection(true);
+        console.log('📶 Connection test failed, assuming slow');
+      };
+      
+      // Imagem pequena de teste (1x1 pixel)
+      testImage.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    };
+
+    // Verificar imediatamente
+    checkConnection();
+
+    // Configurar listener para mudanças de conexão
     if ('connection' in navigator) {
       const connection = (navigator as any).connection;
-      
-      const checkConnection = () => {
-        const slowConnections = ['slow-2g', '2g', '3g'];
-        const isSlow = slowConnections.includes(connection.effectiveType) || 
-                      connection.downlink < 1.5;
-        setIsSlowConnection(isSlow);
-      };
-
-      checkConnection();
       connection.addEventListener('change', checkConnection);
       
       return () => {
@@ -24,14 +59,10 @@ export function useSlowConnection() {
       };
     }
 
-    // Fallback: detectar através de tempo de carregamento
-    const startTime = performance.now();
-    const img = new Image();
-    img.onload = () => {
-      const loadTime = performance.now() - startTime;
-      setIsSlowConnection(loadTime > 1000); // Se demorar mais de 1s para carregar 1px
-    };
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    // Verificar periodicamente como fallback
+    const interval = setInterval(checkConnection, 30000); // A cada 30s
+    
+    return () => clearInterval(interval);
   }, []);
 
   return isSlowConnection;
