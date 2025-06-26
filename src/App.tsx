@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import PublicPage from "./pages/PublicPage";
+import PublicPageOptimized from "./pages/PublicPageOptimized";
 import NotFound from "./pages/NotFound";
 import DemoPage from "./pages/DemoPage";
 import VerificationPage from "./pages/VerificationPage";
@@ -21,8 +22,16 @@ import UpgradePage from "./pages/UpgradePage";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Retry network errors up to 2 times
+        if (failureCount < 2 && error?.message?.includes('fetch')) {
+          return true;
+        }
+        return false;
+      },
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
     },
   },
 });
@@ -63,7 +72,8 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
-              <Route path="/:username" element={<PublicPage />} />
+              {/* Use optimized version for public pages */}
+              <Route path="/:username" element={<PublicPageOptimized />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
