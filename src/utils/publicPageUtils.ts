@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { PublicProfile, PublicLink, PublicSocialLink } from '@/types/publicPage';
+import type { PostgrestResponse } from '@supabase/supabase-js';
 
 const TIMEOUT_MS = 8000;
 
@@ -24,7 +25,7 @@ export const cleanUrl = (url: string): string => {
 };
 
 export const fetchProfile = async (username: string): Promise<PublicProfile> => {
-  const profileResponse = await withTimeout(
+  const profileResponse: PostgrestResponse<PublicProfile> = await withTimeout(
     supabase
       .from('profiles')
       .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
@@ -42,7 +43,7 @@ export const fetchProfile = async (username: string): Promise<PublicProfile> => 
 };
 
 export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
-  const linksResponse = await withTimeout(
+  const linksResponse: PostgrestResponse<PublicLink[]> = await withTimeout(
     supabase
       .from('links')
       .select('id, title, url, icon, position, click_count')
@@ -66,7 +67,7 @@ export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
 
 export const fetchSocialLinks = async (userId: string): Promise<PublicSocialLink[]> => {
   try {
-    const socialResponse = await withTimeout(
+    const socialResponse: PostgrestResponse<PublicSocialLink[]> = await withTimeout(
       supabase
         .from('social_links')
         .select('id, platform, url, position')
