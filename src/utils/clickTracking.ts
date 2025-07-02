@@ -5,7 +5,7 @@ export const trackLinkClick = async (linkId: string): Promise<number> => {
   try {
     console.log('📊 Rastreando clique:', linkId);
     
-    // Non-blocking analytics - handle as a proper promise
+    // Non-blocking analytics - handle as a fire-and-forget operation
     supabase.from('clicks').insert({
       link_id: linkId,
       ip_hash: null,
@@ -13,7 +13,7 @@ export const trackLinkClick = async (linkId: string): Promise<number> => {
       referer: document.referrer || null
     }).then(() => {
       // Success - no action needed
-    }).catch(error => {
+    }).catch((error) => {
       console.warn('⚠️ Falha no tracking (não crítico):', error);
     });
 
