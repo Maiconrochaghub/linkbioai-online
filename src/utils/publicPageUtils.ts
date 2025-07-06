@@ -1,12 +1,13 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { PublicProfile, PublicLink, PublicSocialLink } from '@/types/publicPage';
+import type { PostgrestResponse } from '@supabase/supabase-js';
 
 const TIMEOUT_MS = 8000;
 
-export const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+export const withTimeout = <T>(promise: PromiseLike<T>, timeoutMs: number): Promise<T> => {
   return Promise.race([
-    promise,
+    Promise.resolve(promise),
     new Promise<T>((_, reject) =>
       setTimeout(() => reject(new Error('Timeout')), timeoutMs)
     ),
@@ -31,7 +32,7 @@ export const fetchProfile = async (username: string): Promise<PublicProfile> => 
       .eq('username', username)
       .single(),
     TIMEOUT_MS
-  );
+  ) as PostgrestResponse<PublicProfile>;
 
   if (profileResponse.error) {
     console.error('❌ Erro ao buscar perfil:', profileResponse.error);
@@ -50,7 +51,7 @@ export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
       .eq('is_active', true)
       .order('position', { ascending: true }),
     TIMEOUT_MS
-  );
+  ) as PostgrestResponse<PublicLink[]>;
 
   if (linksResponse.error) {
     console.error('❌ Erro ao buscar links:', linksResponse.error);
@@ -73,7 +74,7 @@ export const fetchSocialLinks = async (userId: string): Promise<PublicSocialLink
         .eq('user_id', userId)
         .order('position', { ascending: true }),
       TIMEOUT_MS / 2
-    );
+    ) as PostgrestResponse<PublicSocialLink[]>;
 
     return socialResponse.data || [];
   } catch (socialError) {

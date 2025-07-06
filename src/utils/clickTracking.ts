@@ -13,12 +13,12 @@ export const trackLinkClick = async (linkId: string): Promise<number> => {
       referer: document.referrer || null
     });
 
-    // Handle the promise properly without blocking - use await to get a proper Promise
-    try {
-      await insertPromise;
-    } catch (error) {
+    // Handle the promise properly without blocking
+    insertPromise.then(() => {
+      // Success - no action needed
+    }).catch((error) => {
       console.warn('⚠️ Falha no tracking (não crítico):', error);
-    }
+    });
 
     // Update click count
     const linkResponse = await supabase
