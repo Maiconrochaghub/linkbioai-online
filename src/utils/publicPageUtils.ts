@@ -31,7 +31,9 @@ export const fetchProfile = async (username: string): Promise<PublicProfile> => 
     .eq('username', username)
     .single();
 
-  const profileResponse = await withTimeout(profileQuery, TIMEOUT_MS) as PostgrestResponse<PublicProfile>;
+  // Execute the query first to get a proper Promise
+  const profilePromise = profileQuery.then(response => response);
+  const profileResponse = await withTimeout(profilePromise, TIMEOUT_MS);
 
   if (profileResponse.error) {
     console.error('❌ Erro ao buscar perfil:', profileResponse.error);
@@ -49,7 +51,9 @@ export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
     .eq('is_active', true)
     .order('position', { ascending: true });
 
-  const linksResponse = await withTimeout(linksQuery, TIMEOUT_MS) as PostgrestResponse<PublicLink[]>;
+  // Execute the query first to get a proper Promise
+  const linksPromise = linksQuery.then(response => response);
+  const linksResponse = await withTimeout(linksPromise, TIMEOUT_MS);
 
   if (linksResponse.error) {
     console.error('❌ Erro ao buscar links:', linksResponse.error);
@@ -71,7 +75,9 @@ export const fetchSocialLinks = async (userId: string): Promise<PublicSocialLink
       .eq('user_id', userId)
       .order('position', { ascending: true });
 
-    const socialResponse = await withTimeout(socialQuery, TIMEOUT_MS / 2) as PostgrestResponse<PublicSocialLink[]>;
+    // Execute the query first to get a proper Promise
+    const socialPromise = socialQuery.then(response => response);
+    const socialResponse = await withTimeout(socialPromise, TIMEOUT_MS / 2);
 
     return socialResponse.data || [];
   } catch (socialError) {
