@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { PublicProfile, PublicLink, PublicSocialLink } from '@/types/publicPage';
-import type { PostgrestResponse } from '@supabase/supabase-js';
 
 const TIMEOUT_MS = 8000;
 
@@ -25,14 +24,12 @@ export const cleanUrl = (url: string): string => {
 };
 
 export const fetchProfile = async (username: string): Promise<PublicProfile> => {
-  const profileQuery = supabase
-    .from('profiles')
-    .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
-    .eq('username', username)
-    .single();
-
-  const profileResponse: PostgrestResponse<PublicProfile> = await withTimeout(
-    profileQuery,
+  const profileResponse = await withTimeout(
+    supabase
+      .from('profiles')
+      .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
+      .eq('username', username)
+      .single(),
     TIMEOUT_MS
   );
 
@@ -45,15 +42,13 @@ export const fetchProfile = async (username: string): Promise<PublicProfile> => 
 };
 
 export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
-  const linksQuery = supabase
-    .from('links')
-    .select('id, title, url, icon, position, click_count')
-    .eq('user_id', userId)
-    .eq('is_active', true)
-    .order('position', { ascending: true });
-
-  const linksResponse: PostgrestResponse<PublicLink[]> = await withTimeout(
-    linksQuery,
+  const linksResponse = await withTimeout(
+    supabase
+      .from('links')
+      .select('id, title, url, icon, position, click_count')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('position', { ascending: true }),
     TIMEOUT_MS
   );
 
@@ -71,14 +66,12 @@ export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
 
 export const fetchSocialLinks = async (userId: string): Promise<PublicSocialLink[]> => {
   try {
-    const socialQuery = supabase
-      .from('social_links')
-      .select('id, platform, url, position')
-      .eq('user_id', userId)
-      .order('position', { ascending: true });
-
-    const socialResponse: PostgrestResponse<PublicSocialLink[]> = await withTimeout(
-      socialQuery,
+    const socialResponse = await withTimeout(
+      supabase
+        .from('social_links')
+        .select('id, platform, url, position')
+        .eq('user_id', userId)
+        .order('position', { ascending: true }),
       TIMEOUT_MS / 2
     );
 
