@@ -6,12 +6,15 @@ export const trackLinkClick = async (linkId: string): Promise<number> => {
     console.log('📊 Rastreando clique:', linkId);
     
     // Non-blocking analytics - handle as a fire-and-forget operation
-    supabase.from('clicks').insert({
+    const insertPromise = supabase.from('clicks').insert({
       link_id: linkId,
       ip_hash: null,
       user_agent: navigator.userAgent,
       referer: document.referrer || null
-    }).then(() => {
+    });
+
+    // Handle the promise properly without blocking
+    insertPromise.then(() => {
       // Success - no action needed
     }).catch((error) => {
       console.warn('⚠️ Falha no tracking (não crítico):', error);

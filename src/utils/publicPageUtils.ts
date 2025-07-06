@@ -25,12 +25,14 @@ export const cleanUrl = (url: string): string => {
 };
 
 export const fetchProfile = async (username: string): Promise<PublicProfile> => {
+  const profileQuery = supabase
+    .from('profiles')
+    .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
+    .eq('username', username)
+    .single();
+
   const profileResponse: PostgrestResponse<PublicProfile> = await withTimeout(
-    supabase
-      .from('profiles')
-      .select('id, name, username, avatar_url, bio, theme, button_color, text_color, plan, is_founder, is_admin')
-      .eq('username', username)
-      .single(),
+    profileQuery,
     TIMEOUT_MS
   );
 
@@ -43,13 +45,15 @@ export const fetchProfile = async (username: string): Promise<PublicProfile> => 
 };
 
 export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
+  const linksQuery = supabase
+    .from('links')
+    .select('id, title, url, icon, position, click_count')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('position', { ascending: true });
+
   const linksResponse: PostgrestResponse<PublicLink[]> = await withTimeout(
-    supabase
-      .from('links')
-      .select('id, title, url, icon, position, click_count')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .order('position', { ascending: true }),
+    linksQuery,
     TIMEOUT_MS
   );
 
@@ -67,12 +71,14 @@ export const fetchLinks = async (userId: string): Promise<PublicLink[]> => {
 
 export const fetchSocialLinks = async (userId: string): Promise<PublicSocialLink[]> => {
   try {
+    const socialQuery = supabase
+      .from('social_links')
+      .select('id, platform, url, position')
+      .eq('user_id', userId)
+      .order('position', { ascending: true });
+
     const socialResponse: PostgrestResponse<PublicSocialLink[]> = await withTimeout(
-      supabase
-        .from('social_links')
-        .select('id, platform, url, position')
-        .eq('user_id', userId)
-        .order('position', { ascending: true }),
+      socialQuery,
       TIMEOUT_MS / 2
     );
 
