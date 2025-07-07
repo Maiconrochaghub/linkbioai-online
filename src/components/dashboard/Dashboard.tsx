@@ -18,12 +18,16 @@ import {
   Users,
   Loader2,
   User,
-  Crown
+  Crown,
+  Palette,
+  Globe
 } from "lucide-react";
 import { LinksList } from "./LinksList";
 import { AddLinkModal } from "./AddLinkModal";
 import { PagePreview } from "./PagePreview";
 import { ProfileEditor } from "./ProfileEditor";
+import { SocialLinksEditor } from "./SocialLinksEditor";
+import { ColorCustomizer } from "./ColorCustomizer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLinks } from "@/hooks/useLinks";
 import { ShareModal } from "./ShareModal";
@@ -39,6 +43,7 @@ export function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab] = useState('links');
+  const [linksSubTab, setLinksSubTab] = useState('my-links');
 
   // Loading state
   if (loading || !user || !profile) {
@@ -278,7 +283,7 @@ export function Dashboard() {
               </Card>
             </div>
 
-            {/* Tabs para Links e Perfil */}
+            {/* Tabs principais */}
             <Card>
               <CardHeader>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -287,28 +292,59 @@ export function Dashboard() {
                     <TabsTrigger value="profile">Editar Perfil</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="links" className="mt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <CardTitle>Seus Links</CardTitle>
-                        <CardDescription>
-                          Gerencie e organize seus links
-                          {!isPro && (
-                            <span className="block text-orange-600 font-medium">
-                              {activeLinks}/{maxLinks} links usados
-                            </span>
-                          )}
-                        </CardDescription>
-                      </div>
-                      <Button 
-                        onClick={() => setShowAddModal(true)} 
-                        disabled={!isPro && activeLinks >= maxLinks}
-                        className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Adicionar Link
-                      </Button>
-                    </div>
+                  <TabsContent value="links">
+                    {/* Sub-tabs para a seção de Links */}
+                    <Tabs value={linksSubTab} onValueChange={setLinksSubTab} className="w-full mt-4">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="my-links">Links</TabsTrigger>
+                        <TabsTrigger value="social-links">
+                          <Globe className="w-4 h-4 mr-2" />
+                          Redes Sociais
+                        </TabsTrigger>
+                        <TabsTrigger value="colors">
+                          <Palette className="w-4 h-4 mr-2" />
+                          Cores
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="my-links" className="mt-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <CardTitle>Seus Links</CardTitle>
+                            <CardDescription>
+                              Gerencie e organize seus links
+                              {!isPro && (
+                                <span className="block text-orange-600 font-medium">
+                                  {activeLinks}/{maxLinks} links usados
+                                </span>
+                              )}
+                            </CardDescription>
+                          </div>
+                          <Button 
+                            onClick={() => setShowAddModal(true)} 
+                            disabled={!isPro && activeLinks >= maxLinks}
+                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Adicionar Link
+                          </Button>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="social-links" className="mt-6">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <Globe className="w-5 h-5 text-purple-600" />
+                          <CardTitle>Redes Sociais</CardTitle>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="colors" className="mt-6">
+                        <div className="flex items-center space-x-2 mb-4">
+                          <Palette className="w-5 h-5 text-purple-600" />
+                          <CardTitle>Personalização de Cores</CardTitle>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
                   </TabsContent>
                   
                   <TabsContent value="profile" className="mt-6">
@@ -323,30 +359,42 @@ export function Dashboard() {
               <CardContent>
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsContent value="links">
-                    {linksLoading ? (
-                      <div className="text-center py-8">
-                        <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-2" />
-                        <p className="text-gray-600">Carregando links...</p>
-                      </div>
-                    ) : links.length === 0 ? (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Plus className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-medium mb-2">Nenhum link ainda</h3>
-                        <p className="text-gray-600 mb-4">Comece adicionando seu primeiro link</p>
-                        <Button onClick={() => setShowAddModal(true)} variant="outline">
-                          Adicionar Primeiro Link
-                        </Button>
-                      </div>
-                    ) : (
-                      <LinksList
-                        links={links}
-                        onUpdate={updateLink}
-                        onDelete={deleteLink}
-                        onReorder={reorderLinks}
-                      />
-                    )}
+                    <Tabs value={linksSubTab} onValueChange={setLinksSubTab}>
+                      <TabsContent value="my-links">
+                        {linksLoading ? (
+                          <div className="text-center py-8">
+                            <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-2" />
+                            <p className="text-gray-600">Carregando links...</p>
+                          </div>
+                        ) : links.length === 0 ? (
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <Plus className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <h3 className="text-lg font-medium mb-2">Nenhum link ainda</h3>
+                            <p className="text-gray-600 mb-4">Comece adicionando seu primeiro link</p>
+                            <Button onClick={() => setShowAddModal(true)} variant="outline">
+                              Adicionar Primeiro Link
+                            </Button>
+                          </div>
+                        ) : (
+                          <LinksList
+                            links={links}
+                            onUpdate={updateLink}
+                            onDelete={deleteLink}
+                            onReorder={reorderLinks}
+                          />
+                        )}
+                      </TabsContent>
+                      
+                      <TabsContent value="social-links">
+                        <SocialLinksEditor />
+                      </TabsContent>
+                      
+                      <TabsContent value="colors">
+                        <ColorCustomizer />
+                      </TabsContent>
+                    </Tabs>
                   </TabsContent>
                   
                   <TabsContent value="profile">
