@@ -1,49 +1,29 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BarChart3, 
-  Eye, 
-  MousePointer, 
-  Plus, 
-  Settings, 
-  ExternalLink,
-  TrendingUp,
-  Calendar,
-  Share2,
-  Shield,
-  Users,
-  Loader2,
-  User,
-  Crown,
-  Palette,
-  Globe
-} from "lucide-react";
-import { LinksList } from "./LinksList";
-import { AddLinkModal } from "./AddLinkModal";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
+import { DashboardHeader } from "./DashboardHeader";
+import { WelcomeSection } from "./WelcomeSection";
+import { StatsCards } from "./StatsCards";
+import { LinksTabContent } from "./LinksTabContent";
 import { PagePreview } from "./PagePreview";
-import { ProfileEditor } from "./ProfileEditor";
-import { SocialLinksEditor } from "./SocialLinksEditor";
-import { ColorCustomizer } from "./ColorCustomizer";
-import { useAuth } from "@/contexts/AuthContext";
-import { useLinks } from "@/hooks/useLinks";
+import { PlanInfoCard } from "./PlanInfoCard";
+import { AddLinkModal } from "./AddLinkModal";
 import { ShareModal } from "./ShareModal";
 import { PlanLimitAlert } from "./PlanLimitAlert";
-import { FounderBadge } from "./FounderBadge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLinks } from "@/hooks/useLinks";
 import { usePlan } from "@/hooks/usePlan";
 
 export function Dashboard() {
-  const { user, profile, loading, signOut, isMasterAdmin, isMaiconRocha } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { links, loading: linksLoading, addLink, updateLink, deleteLink, reorderLinks } = useLinks();
-  const { isPro, maxLinks, isFounder, canUpgrade, founderCount, openCustomerPortal } = usePlan();
+  const { isPro, maxLinks, canUpgrade, openCustomerPortal } = usePlan();
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [activeTab, setActiveTab] = useState('links');
-  const [linksSubTab, setLinksSubTab] = useState('my-links');
 
   // Loading state
   if (loading || !user || !profile) {
@@ -57,9 +37,7 @@ export function Dashboard() {
     );
   }
 
-  const totalClicks = links.reduce((sum, link) => sum + link.click_count, 0);
   const activeLinks = links.filter(link => link.is_active).length;
-  const isAdmin = isMasterAdmin() || isMaiconRocha();
 
   const handleAddLink = async (newLink: { title: string; url: string; is_active: boolean }) => {
     if (!isPro && activeLinks >= maxLinks) {
@@ -82,133 +60,16 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                LinkBio.AI
-              </h1>
-              
-              <FounderBadge isFounder={isFounder} isPro={isPro} size="sm" />
-              
-              {isAdmin && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-yellow-100 rounded-full">
-                  <Shield className="w-3 h-3 text-yellow-600" />
-                  <span className="text-xs text-yellow-700 font-medium">ADMIN</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowShareModal(true)}
-                className="flex items-center"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Compartilhar
-              </Button>
-              
-              <Button variant="outline" size="sm" asChild>
-                <a href={`/${profile.username}`} target="_blank" className="flex items-center">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Ver Página
-                </a>
-              </Button>
-              
-              {isPro && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleManageSubscription}
-                  className="flex items-center"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Gerenciar Assinatura
-                </Button>
-              )}
-              
-              {isAdmin && (
-                <Button variant="outline" size="sm" className="flex items-center">
-                  <Users className="w-4 h-4 mr-2" />
-                  Gerenciar Usuários
-                </Button>
-              )}
-              
-              <div className="flex items-center space-x-2">
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={profile.avatar_url} />
-                  <AvatarFallback className="bg-purple-100 text-purple-600">
-                    {profile.name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium">{profile.name}</span>
-              </div>
-              
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader 
+        onShareClick={() => setShowShareModal(true)}
+        onManageSubscription={handleManageSubscription}
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Welcome Section */}
-            <div className={`rounded-xl p-6 text-white ${
-              isAdmin
-                ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
-                : isPro
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500'
-                : 'bg-gradient-to-r from-blue-500 to-indigo-500'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">
-                    Olá, {profile.name.split(' ')[0]}! 👋
-                    {isAdmin && ' 🛡️'}
-                    {isFounder && ' 👑'}
-                  </h2>
-                  <p className="opacity-90 mb-4">
-                    {isAdmin ? (
-                      <>Acesso de <strong>Administrador Master</strong> ativo</>
-                    ) : isPro ? (
-                      <>
-                        Sua página <strong>{isFounder ? 'Fundador ' : ''}PRO</strong> está ativa em: 
-                        <span className="font-semibold"> linkbio.ai/{profile.username}</span>
-                      </>
-                    ) : (
-                      <>
-                        Sua página está ativa em: <span className="font-semibold">linkbio.ai/{profile.username}</span>
-                        <br />
-                        <span className="text-sm opacity-75">Plano Free: {activeLinks}/{maxLinks} links usados</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-                
-                {!isPro && canUpgrade && (
-                  <Button 
-                    variant="secondary" 
-                    size="sm" 
-                    onClick={() => window.location.href = '/upgrade'}
-                    className="bg-white/20 border-white/30 text-white hover:bg-white/30"
-                  >
-                    <Crown className="w-4 h-4 mr-2" />
-                    Ser Fundador PRO
-                  </Button>
-                )}
-              </div>
-            </div>
+            <WelcomeSection />
 
             {/* Plan Limit Alert */}
             {!isPro && (
@@ -219,187 +80,26 @@ export function Dashboard() {
               />
             )}
 
-            {/* Stats Cards */}
-            <div className="grid md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Cliques</CardTitle>
-                  <MousePointer className="h-4 w-4 text-purple-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">{totalClicks}</div>
-                  <p className="text-xs text-muted-foreground">
-                    <TrendingUp className="inline w-3 h-3 mr-1" />
-                    +{Math.floor(totalClicks * 0.12)} este mês
-                  </p>
-                </CardContent>
-              </Card>
+            <StatsCards links={links} />
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Links Ativos</CardTitle>
-                  <Eye className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{activeLinks}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {isPro ? 'Ilimitados' : `de ${maxLinks} disponíveis`}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {isPro ? 'Plano PRO' : 'Visitantes'}
-                  </CardTitle>
-                  {isPro ? (
-                    <Crown className="h-4 w-4 text-yellow-600" />
-                  ) : (
-                    <BarChart3 className="h-4 w-4 text-blue-600" />
-                  )}
-                </CardHeader>
-                <CardContent>
-                  {isPro ? (
-                    <>
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {isFounder ? 'Fundador' : 'Premium'}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        <Shield className="inline w-3 h-3 mr-1" />
-                        Recursos ilimitados
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold text-blue-600">{Math.floor(totalClicks * 0.8)}</div>
-                      <p className="text-xs text-muted-foreground">
-                        <Calendar className="inline w-3 h-3 mr-1" />
-                        últimos 30 dias
-                      </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Tabs principais */}
+            {/* Main Tabs */}
             <Card>
-              <CardHeader>
+              <CardContent className="p-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
+                  <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="links">Meus Links</TabsTrigger>
                     <TabsTrigger value="profile">Editar Perfil</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="links">
-                    {/* Sub-tabs para a seção de Links */}
-                    <Tabs value={linksSubTab} onValueChange={setLinksSubTab} className="w-full mt-4">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="my-links">Links</TabsTrigger>
-                        <TabsTrigger value="social-links">
-                          <Globe className="w-4 h-4 mr-2" />
-                          Redes Sociais
-                        </TabsTrigger>
-                        <TabsTrigger value="colors">
-                          <Palette className="w-4 h-4 mr-2" />
-                          Cores
-                        </TabsTrigger>
-                      </TabsList>
-                      
-                      <TabsContent value="my-links" className="mt-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <CardTitle>Seus Links</CardTitle>
-                            <CardDescription>
-                              Gerencie e organize seus links
-                              {!isPro && (
-                                <span className="block text-orange-600 font-medium">
-                                  {activeLinks}/{maxLinks} links usados
-                                </span>
-                              )}
-                            </CardDescription>
-                          </div>
-                          <Button 
-                            onClick={() => setShowAddModal(true)} 
-                            disabled={!isPro && activeLinks >= maxLinks}
-                            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Adicionar Link
-                          </Button>
-                        </div>
-                      </TabsContent>
-                      
-                      <TabsContent value="social-links" className="mt-6">
-                        <div className="flex items-center space-x-2 mb-4">
-                          <Globe className="w-5 h-5 text-purple-600" />
-                          <CardTitle>Redes Sociais</CardTitle>
-                        </div>
-                      </TabsContent>
-                      
-                      <TabsContent value="colors" className="mt-6">
-                        <div className="flex items-center space-x-2 mb-4">
-                          <Palette className="w-5 h-5 text-purple-600" />
-                          <CardTitle>Personalização de Cores</CardTitle>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-                  </TabsContent>
-                  
-                  <TabsContent value="profile" className="mt-6">
-                    <div className="flex items-center space-x-2 mb-4">
-                      <User className="w-5 h-5 text-purple-600" />
-                      <CardTitle>Editar Perfil</CardTitle>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardHeader>
-              
-              <CardContent>
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsContent value="links">
-                    <Tabs value={linksSubTab} onValueChange={setLinksSubTab}>
-                      <TabsContent value="my-links">
-                        {linksLoading ? (
-                          <div className="text-center py-8">
-                            <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-2" />
-                            <p className="text-gray-600">Carregando links...</p>
-                          </div>
-                        ) : links.length === 0 ? (
-                          <div className="text-center py-8">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                              <Plus className="w-8 h-8 text-gray-400" />
-                            </div>
-                            <h3 className="text-lg font-medium mb-2">Nenhum link ainda</h3>
-                            <p className="text-gray-600 mb-4">Comece adicionando seu primeiro link</p>
-                            <Button onClick={() => setShowAddModal(true)} variant="outline">
-                              Adicionar Primeiro Link
-                            </Button>
-                          </div>
-                        ) : (
-                          <LinksList
-                            links={links}
-                            onUpdate={updateLink}
-                            onDelete={deleteLink}
-                            onReorder={reorderLinks}
-                          />
-                        )}
-                      </TabsContent>
-                      
-                      <TabsContent value="social-links">
-                        <SocialLinksEditor />
-                      </TabsContent>
-                      
-                      <TabsContent value="colors">
-                        <ColorCustomizer />
-                      </TabsContent>
-                    </Tabs>
-                  </TabsContent>
-                  
-                  <TabsContent value="profile">
-                    <ProfileEditor />
-                  </TabsContent>
+                  <LinksTabContent
+                    activeTab={activeTab}
+                    links={links}
+                    linksLoading={linksLoading}
+                    onAddLink={() => setShowAddModal(true)}
+                    onUpdateLink={updateLink}
+                    onDeleteLink={deleteLink}
+                    onReorderLinks={reorderLinks}
+                  />
                 </Tabs>
               </CardContent>
             </Card>
@@ -408,73 +108,10 @@ export function Dashboard() {
           {/* Sidebar */}
           <div className="space-y-6">
             <PagePreview user={profile} links={links.filter(link => link.is_active)} />
-            
-            {/* Plan Info Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  {isPro ? (
-                    <>
-                      <Crown className="w-5 h-5 text-yellow-500 mr-2" />
-                      {isFounder ? 'Fundador PRO' : 'Plano PRO'}
-                    </>
-                  ) : (
-                    <>
-                      <Shield className="w-5 h-5 text-blue-500 mr-2" />
-                      Plano Free
-                    </>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {isPro ? (
-                  <>
-                    <div className="text-sm">
-                      <p className="font-medium text-green-700">✅ Recursos Ilimitados</p>
-                      <p className="text-gray-600">Links, temas e analytics sem limite</p>
-                    </div>
-                    {isFounder && (
-                      <div className="text-sm">
-                        <p className="font-medium text-yellow-700">👑 Status Fundador</p>
-                        <p className="text-gray-600">Você é um dos {founderCount.toLocaleString()} primeiros!</p>
-                      </div>
-                    )}
-                    <div className="text-sm">
-                      <p className="font-medium text-purple-700">🛠️ Gerenciar Assinatura</p>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={handleManageSubscription}
-                        className="mt-2"
-                      >
-                        Abrir Portal do Cliente
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-sm">
-                      <p className="font-medium text-blue-700">📊 Seu Uso Atual</p>
-                      <p className="text-gray-600">{activeLinks}/{maxLinks} links • 1/4 temas</p>
-                    </div>
-                    {canUpgrade && (
-                      <div className="text-sm">
-                        <p className="font-medium text-purple-700">🚀 Upgrade Disponível</p>
-                        <p className="text-gray-600 mb-2">Seja um dos {(10000 - founderCount).toLocaleString()} fundadores restantes!</p>
-                        <Button 
-                          size="sm" 
-                          onClick={() => window.location.href = '/upgrade'}
-                          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                        >
-                          <Crown className="w-4 h-4 mr-1" />
-                          $1/mês
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
+            <PlanInfoCard 
+              activeLinks={activeLinks}
+              onManageSubscription={handleManageSubscription}
+            />
           </div>
         </div>
       </div>
