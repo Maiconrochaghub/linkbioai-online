@@ -10,8 +10,6 @@ import { Camera, Loader2, Save } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAvatar } from "@/hooks/useAvatar";
 import { ThemeSelector } from "./ThemeSelector";
-import { SocialLinksEditor } from "./SocialLinksEditor";
-import { ColorCustomizer } from "./ColorCustomizer";
 
 export function ProfileEditor() {
   const { user, profile, updateProfile } = useAuth();
@@ -184,12 +182,6 @@ export function ProfileEditor() {
         selectedTheme={formData.theme}
         onThemeChange={(theme) => handleInputChange('theme', theme)}
       />
-
-      {/* Color Customizer */}
-      <ColorCustomizer />
-
-      {/* Social Links Editor */}
-      <SocialLinksEditor />
     </div>
   );
 }
