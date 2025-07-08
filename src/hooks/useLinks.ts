@@ -1,21 +1,14 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-
-export interface Link {
-  id: string;
-  user_id: string;
-  title: string;
-  url: string;
-  icon: string;
-  position: number;
-  is_active: boolean;
-  click_count: number;
-  created_at: string;
-  updated_at: string;
-}
+import { Link, CreateLinkData } from '@/types/link';
+import { 
+  fetchUserLinks, 
+  createLink, 
+  updateLink as updateLinkService, 
+  deleteLink as deleteLinkService,
+  updateLinksPositions 
+} from '@/services/linkService';
 
 export function useLinks() {
   const [links, setLinks] = useState<Link[]>([]);
@@ -33,16 +26,9 @@ export function useLinks() {
 
     try {
       setLoading(true);
-      console.log('🔗 Fetching links for user:', user.id);
-      
-      const { data, error } = await supabase
-        .from('links')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('position', { ascending: true });
+      const { data, error } = await fetchUserLinks(user.id);
 
       if (error) {
-        console.error('❌ Error fetching links:', error);
         toast({
           title: "Erro",
           description: "Erro ao carregar links",
@@ -52,7 +38,6 @@ export function useLinks() {
         return;
       }
 
-      console.log('✅ Links loaded:', data?.length || 0);
       setLinks(data || []);
     } catch (error) {
       console.error('❌ Unexpected error fetching links:', error);
@@ -71,7 +56,7 @@ export function useLinks() {
     fetchLinks();
   }, [fetchLinks]);
 
-  const addLink = async (linkData: { title: string; url: string; icon?: string }) => {
+  const addLink = async (linkData: CreateLinkData) => {
     if (!user) {
       toast({
         title: "Erro",
@@ -83,54 +68,10 @@ export function useLinks() {
 
     try {
       setSaving(true);
-      console.log('➕ Adding link:', linkData.title);
-      
-      // Validate URL
-      let cleanUrl = linkData.url.trim();
-      if (!cleanUrl) {
-        toast({
-          title: "Erro",
-          description: "URL é obrigatória",
-          variant: "destructive"
-        });
-        return false;
-      }
-
-      // Add protocol if missing
-      if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
-        cleanUrl = 'https://' + cleanUrl;
-      }
-
-      // Validate title
-      const cleanTitle = linkData.title.trim();
-      if (!cleanTitle) {
-        toast({
-          title: "Erro",
-          description: "Título é obrigatório",
-          variant: "destructive"
-        });
-        return false;
-      }
-      
       const maxPosition = links.length > 0 ? Math.max(...links.map(l => l.position)) : -1;
-      
-      const newLink = {
-        user_id: user.id,
-        title: cleanTitle,
-        url: cleanUrl,
-        position: maxPosition + 1,
-        is_active: true,
-        icon: linkData.icon || 'website'
-      };
-
-      const { data, error } = await supabase
-        .from('links')
-        .insert([newLink])
-        .select()
-        .single();
+      const { data, error } = await createLink(linkData, user.id, maxPosition);
 
       if (error) {
-        console.error('❌ Error adding link:', error);
         toast({
           title: "Erro",
           description: "Erro ao adicionar link: " + error.message,
@@ -139,13 +80,14 @@ export function useLinks() {
         return false;
       }
 
-      console.log('✅ Link added:', data.title);
-      setLinks(prev => [...prev, data]);
-      toast({
-        title: "Sucesso! 🎉",
-        description: "Link adicionado com sucesso!",
-        duration: 3000,
-      });
+      if (data) {
+        setLinks(prev => [...prev, data]);
+        toast({
+          title: "Sucesso! 🎉",
+          description: "Link adicionado com sucesso!",
+          duration: 3000,
+        });
+      }
       return true;
     } catch (error) {
       console.error('❌ Unexpected error adding link:', error);
@@ -163,40 +105,9 @@ export function useLinks() {
   const updateLink = async (id: string, updates: Partial<Link>) => {
     try {
       setSaving(true);
-      console.log('✏️ Updating link:', id, updates);
-      
-      // Clean URL if provided
-      if (updates.url) {
-        let cleanUrl = updates.url.trim();
-        if (cleanUrl && !cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
-          cleanUrl = 'https://' + cleanUrl;
-        }
-        updates.url = cleanUrl;
-      }
+      const { success, error } = await updateLinkService(id, updates);
 
-      // Clean title if provided
-      if (updates.title) {
-        updates.title = updates.title.trim();
-        if (!updates.title) {
-          toast({
-            title: "Erro",
-            description: "Título não pode estar vazio",
-            variant: "destructive"
-          });
-          return false;
-        }
-      }
-      
-      const { error } = await supabase
-        .from('links')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) {
-        console.error('❌ Error updating link:', error);
+      if (!success) {
         toast({
           title: "Erro",
           description: "Erro ao atualizar link: " + error.message,
@@ -209,7 +120,6 @@ export function useLinks() {
         link.id === id ? { ...link, ...updates } : link
       ));
 
-      console.log('✅ Link updated successfully');
       toast({
         title: "Sucesso",
         description: "Link atualizado com sucesso!",
@@ -231,15 +141,9 @@ export function useLinks() {
   const deleteLink = async (id: string) => {
     try {
       setSaving(true);
-      console.log('🗑️ Deleting link:', id);
-      
-      const { error } = await supabase
-        .from('links')
-        .delete()
-        .eq('id', id);
+      const { success, error } = await deleteLinkService(id);
 
-      if (error) {
-        console.error('❌ Error deleting link:', error);
+      if (!success) {
         toast({
           title: "Erro",
           description: "Erro ao deletar link: " + error.message,
@@ -249,7 +153,6 @@ export function useLinks() {
       }
 
       setLinks(prev => prev.filter(link => link.id !== id));
-      console.log('✅ Link deleted successfully');
       toast({
         title: "Sucesso",
         description: "Link removido com sucesso!",
@@ -271,7 +174,6 @@ export function useLinks() {
   const reorderLinks = async (reorderedLinks: Link[]) => {
     try {
       setSaving(true);
-      console.log('🔄 Reordering links...');
       
       // Update local state immediately for better UX
       setLinks(reorderedLinks);
@@ -281,34 +183,19 @@ export function useLinks() {
         position: index
       }));
 
-      // Use Promise.all for better performance
-      const updatePromises = updates.map(update => 
-        supabase
-          .from('links')
-          .update({ 
-            position: update.position,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', update.id)
-      );
+      const { success, error } = await updateLinksPositions(updates);
 
-      const results = await Promise.allSettled(updatePromises);
-      
-      // Check for any failures
-      const failures = results.filter(result => result.status === 'rejected');
-      if (failures.length > 0) {
-        console.error('❌ Some position updates failed:', failures);
+      if (!success) {
         // Refresh links to get correct order
         await fetchLinks();
         toast({
           title: "Aviso",
-          description: "Algumas posições podem não ter sido salvas corretamente",
+          description: error.message,
           variant: "destructive"
         });
         return false;
       }
 
-      console.log('✅ Links reordered successfully');
       toast({
         title: "Sucesso",
         description: "Ordem dos links atualizada!",
@@ -340,3 +227,6 @@ export function useLinks() {
     fetchLinks
   };
 }
+
+// Re-export types for backward compatibility
+export type { Link, CreateLinkData } from '@/types/link';

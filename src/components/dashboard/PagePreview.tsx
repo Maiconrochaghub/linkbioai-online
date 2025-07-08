@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Eye, Instagram, Youtube, Github, Twitter, Linkedin, Globe, Phone, Mail, BarChart3 } from "lucide-react";
+import { Link } from "@/types/link";
 
 interface User {
   id: string;
@@ -12,16 +13,6 @@ interface User {
   avatar_url?: string;
   bio?: string;
   theme?: string;
-}
-
-interface Link {
-  id: string;
-  title: string;
-  url: string;
-  icon: string;
-  position: number;
-  is_active: boolean;
-  click_count: number;
 }
 
 interface PagePreviewProps {

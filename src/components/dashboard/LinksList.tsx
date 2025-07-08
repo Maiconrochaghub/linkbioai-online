@@ -27,17 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { EditLinkModal } from "./EditLinkModal";
-
-interface Link {
-  id: string;
-  title: string;
-  url: string;
-  icon: string;
-  position: number;
-  is_active: boolean;
-  click_count: number;
-  created_at: string;
-}
+import { Link } from "@/types/link";
 
 interface LinksListProps {
   links: Link[];

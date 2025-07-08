@@ -19,15 +19,7 @@ import {
   Mail,
   Save
 } from "lucide-react";
-
-interface Link {
-  id: string;
-  title: string;
-  url: string;
-  icon: string;
-  is_active: boolean;
-  click_count: number;
-}
+import { Link } from "@/types/link";
 
 interface EditLinkModalProps {
   open: boolean;

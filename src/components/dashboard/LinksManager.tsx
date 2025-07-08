@@ -4,7 +4,7 @@ import { CardTitle, CardDescription } from "@/components/ui/card";
 import { Plus, Loader2 } from "lucide-react";
 import { LinksList } from "./LinksList";
 import { usePlan } from "@/hooks/usePlan";
-import { Link } from "@/hooks/useLinks";
+import { Link } from "@/types/link";
 
 interface LinksManagerProps {
   links: Link[];

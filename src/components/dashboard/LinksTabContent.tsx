@@ -14,7 +14,7 @@ import { SocialLinksEditor } from "./SocialLinksEditor";
 import { ColorCustomizer } from "./ColorCustomizer";
 import { ProfileEditor } from "./ProfileEditor";
 import { LinksManager } from "./LinksManager";
-import { Link } from "@/hooks/useLinks";
+import { Link } from "@/types/link";
 
 interface LinksTabContentProps {
   activeTab: string;

@@ -18,18 +18,12 @@ import {
   Mail,
   Plus
 } from "lucide-react";
-
-interface Link {
-  title: string;
-  url: string;
-  icon: string;
-  is_active: boolean;
-}
+import { CreateLinkData } from "@/types/link";
 
 interface AddLinkModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (link: Link) => void;
+  onAdd: (link: CreateLinkData & { is_active: boolean }) => void;
 }
 
 const detectIcon = (url: string): string => {
@@ -133,7 +127,7 @@ export function AddLinkModal({ open, onOpenChange, onAdd }: AddLinkModalProps) {
     
     // Simulate API call
     setTimeout(() => {
-      const newLink: Link = {
+      const newLink: CreateLinkData & { is_active: boolean } = {
         title: formData.title.trim(),
         url: formData.url.trim(),
         icon: detectedIcon,
